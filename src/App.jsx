@@ -8,7 +8,7 @@ const FALLBACK_RATES = {
   bcv: 567.68,
   euro: 655.38,
   usdt: 760.18,
-  intervencion: 615.00,
+  intervencion: 615.52,
 };
 
 /* ─── ESTILOS ─────────────────────────────────────────────────────────── */
@@ -257,15 +257,26 @@ const styles = `
 async function fetchRates() {
   const results = { ...FALLBACK_RATES };
   let fromApi = false;
+
+  // 1. dolarapi.com → BCV y Euro (fuente principal venezolana)
   try {
-    const res = await fetch("https://api.exchangerate-api.com/v4/latest/USD", { signal: AbortSignal.timeout(6000) });
+    const res = await fetch("https://ve.dolarapi.com/v1/dolares", { signal: AbortSignal.timeout(7000) });
     const data = await res.json();
-    if (data.rates?.VES && data.rates.VES > 100) {
-      results.bcv = data.rates.VES;
-      if (data.rates?.EUR) results.euro = data.rates.VES / data.rates.EUR;
-      fromApi = true;
+    if (Array.isArray(data)) {
+      const bcvData    = data.find(item => item.fuente === "bcv");
+      const euroData   = data.find(item => item.fuente === "bcv" && item.moneda === "EUR");
+      const paraleloData = data.find(item =>
+        item.fuente === "paralelo" || item.fuente === "enparalelovzla" || item.fuente === "promedio"
+      );
+
+      if (bcvData?.promedio   && bcvData.promedio > 100)   { results.bcv   = bcvData.promedio;   fromApi = true; }
+      if (euroData?.promedio  && euroData.promedio > 100)  { results.euro  = euroData.promedio; }
+      // Si la API devuelve paralelo, lo usamos como referencia de USDT cuando Binance falla
+      if (paraleloData?.promedio && paraleloData.promedio > 100) { results._paralelo = paraleloData.promedio; }
     }
   } catch (_) {}
+
+  // 2. USDT vía Binance P2P promedio
   try {
     const res = await fetch("https://p2p.binance.com/bapi/c2c/v2/friendly/c2c/adv/search", {
       method: "POST", headers: { "Content-Type": "application/json" },
@@ -274,9 +285,14 @@ async function fetchRates() {
     });
     const data = await res.json();
     const prices = data?.data?.map(d => parseFloat(d.adv?.price)).filter(Boolean);
-    if (prices?.length) { results.usdt = prices.reduce((a,b)=>a+b,0)/prices.length; fromApi=true; }
-  } catch (_) {}
-  results.intervencion = 615.00;
+    if (prices?.length) { results.usdt = prices.reduce((a,b)=>a+b,0)/prices.length; fromApi = true; }
+    else if (results._paralelo) results.usdt = results._paralelo; // fallback al paralelo
+  } catch (_) {
+    if (results._paralelo) results.usdt = results._paralelo;
+  }
+
+  // 3. Intervención Digital – tasa fija mensual BCV
+  results.intervencion = 615.52;
   results._fromApi = fromApi;
   return results;
 }
@@ -408,10 +424,10 @@ export default function App() {
   const today = todayStr();
 
   const rateCards = [
-    { id:"bcv",          icon:"🏦", name:"Dólar BCV",           subtitle:"Banco Central de Venezuela", value:rates.bcv,          unit:"Bs/USD",  src:"BCV Oficial"  },
-    { id:"euro",         icon:"💶", name:"Euro BCV",             subtitle:"Cotización oficial EUR",     value:rates.euro,         unit:"Bs/EUR",  src:"BCV Oficial"  },
-    { id:"usdt",         icon:"₮",  name:"USDT Binance",         subtitle:"Promedio P2P Binance",       value:rates.usdt,         unit:"Bs/USDT", src:"Binance P2P"  },
-    { id:"intervencion", icon:"📱", name:"Intervención Digital", subtitle:"Dólar electrónico BCV",      value:rates.intervencion, unit:"Bs/USD",  src:"BCV Oficial"  },
+    { id:"bcv",          icon:"🏦", name:"Dólar BCV",           subtitle:"Banco Central de Venezuela", value:rates.bcv,          unit:"Bs/USD",  src:"dolarapi.com"  },
+    { id:"euro",         icon:"💶", name:"Euro BCV",             subtitle:"Cotización oficial EUR",     value:rates.euro,         unit:"Bs/EUR",  src:"dolarapi.com"  },
+    { id:"usdt",         icon:"₮",  name:"USDT / Paralelo",      subtitle:"Binance P2P · Monitor",      value:rates.usdt,         unit:"Bs/USDT", src:"Binance P2P"   },
+    { id:"intervencion", icon:"📱", name:"Intervención Digital", subtitle:"Tasa BCV Bancos Digital",    value:rates.intervencion, unit:"Bs/USD",  src:"BCV Mensual"   },
   ];
 
   /* ── Share actions ── */
