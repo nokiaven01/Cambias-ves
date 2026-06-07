@@ -251,6 +251,102 @@ const styles = `
   .footer-divider { height:1px; background:rgba(255,255,255,0.05); margin-bottom:14px; }
   .footer-text { text-align:center; font-size:10.5px; color:#475569; line-height:1.7; font-family:'JetBrains Mono',monospace; }
   .footer-text .highlight { color:#eab308; }
+
+  /* DONATIONS */
+  .donate-section {
+    margin: 8px 16px 0; padding: 20px 16px;
+    background: rgba(255,255,255,0.02);
+    border: 1px solid rgba(255,255,255,0.07);
+    border-radius: 20px; position: relative; z-index: 1; overflow: hidden;
+  }
+  .donate-section::before {
+    content: '';
+    position: absolute; top: 0; left: 0; right: 0; height: 2px;
+    background: linear-gradient(90deg, #eab308, #f97316, #ec4899, #8b5cf6, #3b82f6, #10b981);
+    border-radius: 20px 20px 0 0;
+  }
+  .donate-header {
+    display: flex; align-items: center; gap: 10px; margin-bottom: 16px;
+  }
+  .donate-heart {
+    width: 36px; height: 36px; border-radius: 10px;
+    background: linear-gradient(135deg, rgba(236,72,153,0.2), rgba(239,68,68,0.2));
+    border: 1px solid rgba(236,72,153,0.25);
+    display: flex; align-items: center; justify-content: center; font-size: 18px;
+    flex-shrink: 0;
+  }
+  .donate-title { font-size: 14px; font-weight: 800; color: #f1f5f9; }
+  .donate-subtitle { font-size: 11px; color: #64748b; margin-top: 1px; }
+
+  .donate-method {
+    background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.07);
+    border-radius: 14px; padding: 13px 14px; margin-bottom: 10px;
+    position: relative; overflow: hidden;
+  }
+  .donate-method:last-child { margin-bottom: 0; }
+  .donate-method::before {
+    content: ''; position: absolute; left: 0; top: 0; bottom: 0;
+    width: 3px; border-radius: 3px 0 0 3px;
+  }
+  .donate-method.pago-movil::before { background: linear-gradient(to bottom, #eab308, #f97316); }
+  .donate-method.trc20::before      { background: linear-gradient(to bottom, #ef4444, #dc2626); }
+  .donate-method.erc20::before      { background: linear-gradient(to bottom, #8b5cf6, #6d28d9); }
+  .donate-method.bep20::before      { background: linear-gradient(to bottom, #f59e0b, #92400e); }
+
+  .donate-method-header {
+    display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px;
+  }
+  .donate-method-left { display: flex; align-items: center; gap: 8px; }
+  .donate-method-icon {
+    width: 28px; height: 28px; border-radius: 8px;
+    display: flex; align-items: center; justify-content: center; font-size: 14px; flex-shrink: 0;
+  }
+  .donate-method-icon.pago-movil { background: rgba(234,179,8,0.15); }
+  .donate-method-icon.trc20      { background: rgba(239,68,68,0.15); }
+  .donate-method-icon.erc20      { background: rgba(139,92,246,0.15); }
+  .donate-method-icon.bep20      { background: rgba(245,158,11,0.15); }
+
+  .donate-method-name { font-size: 12px; font-weight: 700; color: #f1f5f9; }
+  .donate-method-tag  { font-size: 9px; color: #64748b; margin-top: 1px; font-family: 'JetBrains Mono', monospace; }
+
+  .donate-copy-btn {
+    background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.1);
+    border-radius: 8px; padding: 4px 10px; font-size: 11px; font-weight: 600;
+    color: #94a3b8; font-family: 'Exo 2', sans-serif; cursor: pointer;
+    transition: all .15s; white-space: nowrap; flex-shrink: 0;
+  }
+  .donate-copy-btn:active { background: rgba(255,255,255,0.12); color: #f1f5f9; transform: scale(0.95); }
+
+  .donate-row {
+    display: flex; align-items: center; justify-content: space-between;
+    background: rgba(0,0,0,0.2); border-radius: 8px; padding: 7px 10px; margin-bottom: 6px;
+  }
+  .donate-row:last-child { margin-bottom: 0; }
+  .donate-row-label { font-size: 9px; font-weight: 700; color: #475569; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 2px; }
+  .donate-row-value { font-size: 12px; font-weight: 600; color: #e2e8f0; font-family: 'JetBrains Mono', monospace; word-break: break-all; }
+  .donate-row-copy  { font-size: 14px; cursor: pointer; padding: 2px 4px; flex-shrink: 0; opacity: .7; transition: opacity .15s; }
+  .donate-row-copy:active { opacity: 1; }
+
+  .donate-wallet {
+    background: rgba(0,0,0,0.2); border-radius: 10px; padding: 10px 12px;
+    display: flex; align-items: flex-start; justify-content: space-between; gap: 8px;
+  }
+  .donate-wallet-addr {
+    font-family: 'JetBrains Mono', monospace; font-size: 10.5px; color: #cbd5e1;
+    word-break: break-all; line-height: 1.6; flex: 1;
+  }
+  .donate-wallet-copy {
+    background: rgba(255,255,255,0.07); border: 1px solid rgba(255,255,255,0.1);
+    border-radius: 7px; padding: 5px 9px; font-size: 11px; font-weight: 600;
+    color: #94a3b8; font-family: 'Exo 2', sans-serif; cursor: pointer;
+    transition: all .15s; white-space: nowrap; flex-shrink: 0;
+  }
+  .donate-wallet-copy:active { background: rgba(255,255,255,0.14); color: #f1f5f9; transform: scale(0.95); }
+  .donate-thanks {
+    text-align: center; font-size: 11px; color: #475569; margin-top: 14px;
+    font-family: 'JetBrains Mono', monospace; line-height: 1.6;
+  }
+  .donate-thanks span { color: #ec4899; }
 `;
 
 /* ─── FETCH RATES ─────────────────────────────────────────────────────── */
@@ -584,6 +680,102 @@ export default function App() {
             <span style={{fontSize:18}}>💬</span>
             Enviar cotización por WhatsApp
           </button>
+        </div>
+
+        {/* ── DONACIONES ── */}
+        <div className="donate-section">
+          <div className="donate-header">
+            <div className="donate-heart">💛</div>
+            <div>
+              <div className="donate-title">Apoya este proyecto</div>
+              <div className="donate-subtitle">Si te es útil, puedes contribuir con una donación</div>
+            </div>
+          </div>
+
+          {/* Pago Móvil */}
+          <div className="donate-method pago-movil">
+            <div className="donate-method-header">
+              <div className="donate-method-left">
+                <div className="donate-method-icon pago-movil">📲</div>
+                <div>
+                  <div className="donate-method-name">Pago Móvil · Bolívares</div>
+                  <div className="donate-method-tag">BNC · MERCANTIL · BANCAMIGA</div>
+                </div>
+              </div>
+            </div>
+            {[
+              { label: "Teléfono", value: "0412-611.08.07" },
+              { label: "Cédula",   value: "V-19.507.318"   },
+              { label: "Bancos",   value: "BNC · Mercantil · Bancamiga" },
+            ].map(row => (
+              <div className="donate-row" key={row.label}>
+                <div>
+                  <div className="donate-row-label">{row.label}</div>
+                  <div className="donate-row-value">{row.value}</div>
+                </div>
+                <span
+                  className="donate-row-copy"
+                  onClick={() => { navigator.clipboard?.writeText(row.value.replace(/[\s.\-·]/g,"")); showToast(`✓ ${row.label} copiado`); }}
+                >📋</span>
+              </div>
+            ))}
+          </div>
+
+          {/* USDT TRC20 */}
+          <div className="donate-method trc20">
+            <div className="donate-method-header">
+              <div className="donate-method-left">
+                <div className="donate-method-icon trc20">₮</div>
+                <div>
+                  <div className="donate-method-name">USDT · TRC20</div>
+                  <div className="donate-method-tag">Red Tron</div>
+                </div>
+              </div>
+            </div>
+            <div className="donate-wallet">
+              <div className="donate-wallet-addr">TEj5xL4Hmg3TeSC7tL6kNTP9zGAkz2cdjG</div>
+              <button className="donate-wallet-copy" onClick={() => { navigator.clipboard?.writeText("TEj5xL4Hmg3TeSC7tL6kNTP9zGAkz2cdjG"); showToast("✓ Wallet TRC20 copiada"); }}>Copiar</button>
+            </div>
+          </div>
+
+          {/* USDT ERC20 */}
+          <div className="donate-method erc20">
+            <div className="donate-method-header">
+              <div className="donate-method-left">
+                <div className="donate-method-icon erc20">⟠</div>
+                <div>
+                  <div className="donate-method-name">USDT · ERC20</div>
+                  <div className="donate-method-tag">Red Ethereum</div>
+                </div>
+              </div>
+            </div>
+            <div className="donate-wallet">
+              <div className="donate-wallet-addr">0xc1abeb99d5ce84ebbaa22253dd80bedd06f1ecc7</div>
+              <button className="donate-wallet-copy" onClick={() => { navigator.clipboard?.writeText("0xc1abeb99d5ce84ebbaa22253dd80bedd06f1ecc7"); showToast("✓ Wallet ERC20 copiada"); }}>Copiar</button>
+            </div>
+          </div>
+
+          {/* USDT BEP20 */}
+          <div className="donate-method bep20">
+            <div className="donate-method-header">
+              <div className="donate-method-left">
+                <div className="donate-method-icon bep20">🔶</div>
+                <div>
+                  <div className="donate-method-name">USDT · BEP20</div>
+                  <div className="donate-method-tag">Red BNB Smart Chain</div>
+                </div>
+              </div>
+            </div>
+            <div className="donate-wallet">
+              <div className="donate-wallet-addr">0xc1abeb99d5ce84ebbaa22253dd80bedd06f1ecc7</div>
+              <button className="donate-wallet-copy" onClick={() => { navigator.clipboard?.writeText("0xc1abeb99d5ce84ebbaa22253dd80bedd06f1ecc7"); showToast("✓ Wallet BEP20 copiada"); }}>Copiar</button>
+            </div>
+          </div>
+
+          <div className="donate-thanks">
+            Cada aporte ayuda a mantener la app activa y actualizada<br/>
+            <span>♥</span> ¡Gracias por tu apoyo!
+          </div>
         </div>
 
         {/* FOOTER */}
