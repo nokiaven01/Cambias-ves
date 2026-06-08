@@ -26,9 +26,285 @@
     <link rel="apple-touch-icon" sizes="152x152" href="/icons/icon-152.png" />
 
     <title>Cambio VES – Tasas BCV Venezuela</title>
+
+    <style>
+      /* ── RESET ── */
+      *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+      /* ── DOWNLOAD BANNER ── */
+      body {
+        background: #0a0d12;
+        font-family: 'Segoe UI', Arial, sans-serif;
+        color: #e2e8f0;
+      }
+
+      /* Only show the banner on real Android browsers */
+      #apk-banner { display: none; }
+
+      @media (max-width: 600px) {
+        #apk-banner { display: block; }
+      }
+
+      .apk-banner {
+        background: linear-gradient(160deg, #0f1a2e 0%, #0a0d12 100%);
+        border-bottom: 1px solid rgba(255,255,255,0.06);
+        padding: 28px 20px 24px;
+        text-align: center;
+        position: relative;
+        overflow: hidden;
+      }
+
+      /* Decorative glow behind the button */
+      .apk-banner::before {
+        content: '';
+        position: absolute;
+        top: 50%; left: 50%;
+        transform: translate(-50%, -50%);
+        width: 260px; height: 140px;
+        background: radial-gradient(ellipse, rgba(34,197,94,0.12) 0%, transparent 70%);
+        pointer-events: none;
+      }
+
+      /* Top rainbow line */
+      .apk-banner::after {
+        content: '';
+        position: absolute;
+        top: 0; left: 0; right: 0; height: 3px;
+        background: linear-gradient(90deg, #eab308, #22c55e, #3b82f6, #8b5cf6);
+      }
+
+      .apk-eyebrow {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        background: rgba(34,197,94,0.1);
+        border: 1px solid rgba(34,197,94,0.2);
+        border-radius: 20px;
+        padding: 4px 12px;
+        font-size: 11px;
+        font-weight: 700;
+        letter-spacing: 1.5px;
+        text-transform: uppercase;
+        color: #4ade80;
+        margin-bottom: 14px;
+      }
+
+      .apk-dot {
+        width: 6px; height: 6px;
+        border-radius: 50%;
+        background: #4ade80;
+        animation: blink 1.8s infinite;
+      }
+      @keyframes blink { 0%,100%{opacity:1} 50%{opacity:0.3} }
+
+      .apk-title {
+        font-size: 20px;
+        font-weight: 900;
+        color: #f8fafc;
+        letter-spacing: -0.3px;
+        margin-bottom: 4px;
+        line-height: 1.2;
+      }
+      .apk-title span { color: #eab308; }
+
+      .apk-desc {
+        font-size: 12px;
+        color: #64748b;
+        margin-bottom: 20px;
+        line-height: 1.5;
+      }
+
+      /* ── DOWNLOAD BUTTON ── */
+      .apk-btn {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 10px;
+        background: linear-gradient(135deg, #16a34a, #15803d);
+        color: #fff;
+        font-size: 15px;
+        font-weight: 800;
+        text-decoration: none;
+        padding: 15px 28px;
+        border-radius: 16px;
+        box-shadow: 0 4px 24px rgba(22,163,74,0.45), 0 1px 3px rgba(0,0,0,0.4);
+        transition: transform 0.18s ease, box-shadow 0.18s ease;
+        width: 100%;
+        max-width: 320px;
+        letter-spacing: 0.3px;
+        position: relative;
+        overflow: hidden;
+      }
+      /* Shimmer sweep */
+      .apk-btn::after {
+        content: '';
+        position: absolute;
+        top: 0; left: -75%;
+        width: 50%; height: 100%;
+        background: linear-gradient(90deg, transparent, rgba(255,255,255,0.18), transparent);
+        transform: skewX(-20deg);
+        animation: shimmer 2.8s infinite;
+      }
+      @keyframes shimmer { 0%{left:-75%} 100%{left:150%} }
+
+      .apk-btn:active {
+        transform: scale(0.97);
+        box-shadow: 0 2px 12px rgba(22,163,74,0.35);
+      }
+
+      .apk-btn-icon {
+        font-size: 22px;
+        line-height: 1;
+        flex-shrink: 0;
+      }
+
+      .apk-btn-text { display: flex; flex-direction: column; align-items: flex-start; }
+      .apk-btn-top  { font-size: 11px; font-weight: 600; opacity: 0.85; line-height: 1; }
+      .apk-btn-main { font-size: 16px; font-weight: 900; line-height: 1.2; }
+
+      .apk-meta {
+        margin-top: 10px;
+        font-size: 10.5px;
+        color: #475569;
+      }
+
+      /* ── INSTALL STEPS ── */
+      .apk-steps {
+        margin-top: 20px;
+        background: rgba(255,255,255,0.03);
+        border: 1px solid rgba(255,255,255,0.07);
+        border-radius: 14px;
+        padding: 14px 16px;
+        text-align: left;
+      }
+
+      .apk-steps-title {
+        font-size: 11px;
+        font-weight: 700;
+        letter-spacing: 1.5px;
+        text-transform: uppercase;
+        color: #eab308;
+        margin-bottom: 12px;
+        display: flex;
+        align-items: center;
+        gap: 6px;
+      }
+
+      .apk-step {
+        display: flex;
+        align-items: flex-start;
+        gap: 10px;
+        margin-bottom: 10px;
+      }
+      .apk-step:last-child { margin-bottom: 0; }
+
+      .apk-step-num {
+        width: 20px; height: 20px;
+        border-radius: 50%;
+        background: rgba(234,179,8,0.15);
+        border: 1px solid rgba(234,179,8,0.3);
+        color: #eab308;
+        font-size: 10px;
+        font-weight: 800;
+        display: flex; align-items: center; justify-content: center;
+        flex-shrink: 0;
+        margin-top: 1px;
+      }
+
+      .apk-step-text {
+        font-size: 12px;
+        color: #94a3b8;
+        line-height: 1.55;
+      }
+      .apk-step-text strong { color: #e2e8f0; font-weight: 700; }
+    </style>
   </head>
   <body>
+
+    <!-- ══ APK DOWNLOAD BANNER (visible only on mobile) ══ -->
+    <div id="apk-banner">
+      <div class="apk-banner">
+        <div class="apk-eyebrow">
+          <span class="apk-dot"></span>
+          Disponible para Android
+        </div>
+
+        <div class="apk-title">Descarga <span>Cambio VES</span></div>
+        <div class="apk-desc">
+          Tasas BCV, Euro, USDT e Intervención Digital.<br/>
+          Funciona online y sin internet.
+        </div>
+
+        <!-- DOWNLOAD BUTTON -->
+        <div style="display:flex; justify-content:center;">
+          <a class="apk-btn" href="/cambioves.apk" download="cambioves.apk">
+            <span class="apk-btn-icon">⬇</span>
+            <span class="apk-btn-text">
+              <span class="apk-btn-top">Descargar gratis</span>
+              <span class="apk-btn-main">Cambio VES .apk</span>
+            </span>
+          </a>
+        </div>
+
+        <div class="apk-meta">📦 cambioves.apk · Compatible con Android 7+</div>
+
+        <!-- INSTALL STEPS -->
+        <div class="apk-steps">
+          <div class="apk-steps-title">
+            🛠 Cómo instalar el APK
+          </div>
+
+          <div class="apk-step">
+            <div class="apk-step-num">1</div>
+            <div class="apk-step-text">
+              Toca el botón de descarga. Si Chrome te avisa, toca
+              <strong>"Descargar de todos modos"</strong> para continuar.
+            </div>
+          </div>
+
+          <div class="apk-step">
+            <div class="apk-step-num">2</div>
+            <div class="apk-step-text">
+              Cuando termine la descarga, abre el archivo <strong>cambioves.apk</strong>
+              desde la barra de notificaciones o desde tu carpeta de Descargas.
+            </div>
+          </div>
+
+          <div class="apk-step">
+            <div class="apk-step-num">3</div>
+            <div class="apk-step-text">
+              Si Android te pide permiso, ve a
+              <strong>Ajustes → Seguridad → Instalar apps de fuentes desconocidas</strong>
+              y actívalo solo para tu navegador.
+            </div>
+          </div>
+
+          <div class="apk-step">
+            <div class="apk-step-num">4</div>
+            <div class="apk-step-text">
+              Toca <strong>"Instalar"</strong> y listo. Busca el ícono
+              <strong>Cambio VES</strong> en tu pantalla de inicio. 🎉
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+    <!-- ══ END APK BANNER ══ -->
+
     <div id="root"></div>
     <script type="module" src="/src/main.jsx"></script>
+
+    <!-- Detect Android and force-show banner even on wider screens -->
+    <script>
+      (function() {
+        var ua = navigator.userAgent || '';
+        var isAndroid = /android/i.test(ua);
+        if (isAndroid) {
+          var banner = document.getElementById('apk-banner');
+          if (banner) banner.style.display = 'block';
+        }
+      })();
+    </script>
   </body>
 </html>
