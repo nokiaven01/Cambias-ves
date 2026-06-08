@@ -1,5 +1,5 @@
 [build]
-  command   = "npm run build && cp public/cambioves.apk dist/cambioves.apk"
+  command   = "npm run build && cp /opt/build/repo/public/cambioves.apk /opt/build/repo/dist/cambioves.apk"
   publish   = "dist"
 
 # APK: Content-Type correcto para que Android lo reconozca como instalable
