@@ -1,0 +1,24 @@
+[build]
+  command   = "npm run build"
+  publish   = "dist"
+
+# APK: Content-Type correcto para que Android lo reconozca como instalable
+[[headers]]
+  for = "/cambioves.apk"
+  [headers.values]
+    Content-Type        = "application/vnd.android.package-archive"
+    Content-Disposition = 'attachment; filename="cambioves.apk"'
+    Cache-Control       = "public, max-age=86400"
+
+# Service Worker: nunca cacheado
+[[headers]]
+  for = "/sw.js"
+  [headers.values]
+    Cache-Control = "no-cache"
+    Service-Worker-Allowed = "/"
+
+# SPA: todas las rutas apuntan a index.html
+[[redirects]]
+  from   = "/*"
+  to     = "/index.html"
+  status = 200
