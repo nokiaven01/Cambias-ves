@@ -1,14 +1,13 @@
 [build]
-  command   = "npm run build && cp /opt/build/repo/public/cambioves.apk /opt/build/repo/dist/cambioves.apk"
+  command   = "npm run build"
   publish   = "dist"
 
-# APK: Content-Type correcto para que Android lo reconozca como instalable
-[[headers]]
-  for = "/cambioves.apk"
-  [headers.values]
-    Content-Type        = "application/vnd.android.package-archive"
-    Content-Disposition = 'attachment; filename="cambioves.apk"'
-    Cache-Control       = "public, max-age=86400"
+# Redirige la descarga del APK hacia Telegram
+[[redirects]]
+  from   = "/cambioves.apk"
+  to     = "https://t.me/cambiasves/2"
+  status = 302
+  force  = true
 
 # Service Worker: nunca cacheado
 [[headers]]
@@ -16,12 +15,6 @@
   [headers.values]
     Cache-Control = "no-cache"
     Service-Worker-Allowed = "/"
-
-# Excluir el APK del redirect SPA
-[[redirects]]
-  from   = "/cambioves.apk"
-  to     = "/cambioves.apk"
-  status = 200
 
 # SPA: todas las demás rutas apuntan a index.html
 [[redirects]]
