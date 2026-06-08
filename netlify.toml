@@ -17,7 +17,13 @@
     Cache-Control = "no-cache"
     Service-Worker-Allowed = "/"
 
-# SPA: todas las rutas apuntan a index.html
+# Excluir el APK del redirect SPA
+[[redirects]]
+  from   = "/cambioves.apk"
+  to     = "/cambioves.apk"
+  status = 200
+
+# SPA: todas las demás rutas apuntan a index.html
 [[redirects]]
   from   = "/*"
   to     = "/index.html"
