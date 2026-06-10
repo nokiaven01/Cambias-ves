@@ -354,23 +354,37 @@ async function fetchRates() {
   const results = { ...FALLBACK_RATES };
   let fromApi = false;
 
-  // 1. dolarapi.com → BCV y Euro (fuente principal venezolana)
+  // 1. bcv.today → Dólar BCV y Euro directamente del Banco Central de Venezuela
   try {
-    const res = await fetch("https://ve.dolarapi.com/v1/dolares", { signal: AbortSignal.timeout(7000) });
+    const res = await fetch("https://bcv.today/api/latest", { signal: AbortSignal.timeout(7000) });
     const data = await res.json();
-    if (Array.isArray(data)) {
-      const bcvData    = data.find(item => item.fuente === "bcv");
-      const euroData   = data.find(item => item.fuente === "bcv" && item.moneda === "EUR");
-      const paraleloData = data.find(item =>
-        item.fuente === "paralelo" || item.fuente === "enparalelovzla" || item.fuente === "promedio"
-      );
-
-      if (bcvData?.promedio   && bcvData.promedio > 100)   { results.bcv   = bcvData.promedio;   fromApi = true; }
-      if (euroData?.promedio  && euroData.promedio > 100)  { results.euro  = euroData.promedio; }
-      // Si la API devuelve paralelo, lo usamos como referencia de USDT cuando Binance falla
-      if (paraleloData?.promedio && paraleloData.promedio > 100) { results._paralelo = paraleloData.promedio; }
+    // Respuesta: { USD: 572.68, EUR: 662.25, fecha: "2026-06-10", ... }
+    if (data?.USD && data.USD > 100) {
+      results.bcv  = data.USD;
+      fromApi = true;
+    }
+    if (data?.EUR && data.EUR > 100) {
+      results.euro = data.EUR;
     }
   } catch (_) {}
+
+  // Fallback: ve.dolarapi.com si bcv.today no responde
+  if (!fromApi) {
+    try {
+      const res = await fetch("https://ve.dolarapi.com/v1/dolares", { signal: AbortSignal.timeout(7000) });
+      const data = await res.json();
+      if (Array.isArray(data)) {
+        const bcvData  = data.find(item => item.fuente === "bcv");
+        const euroData = data.find(item => item.fuente === "bcv" && item.moneda === "EUR");
+        const paraleloData = data.find(item =>
+          item.fuente === "paralelo" || item.fuente === "enparalelovzla" || item.fuente === "promedio"
+        );
+        if (bcvData?.promedio  && bcvData.promedio > 100)  { results.bcv  = bcvData.promedio;  fromApi = true; }
+        if (euroData?.promedio && euroData.promedio > 100) { results.euro = euroData.promedio; }
+        if (paraleloData?.promedio && paraleloData.promedio > 100) { results._paralelo = paraleloData.promedio; }
+      }
+    } catch (_) {}
+  }
 
   // 2. USDT vía Binance P2P promedio
   try {
@@ -382,7 +396,7 @@ async function fetchRates() {
     const data = await res.json();
     const prices = data?.data?.map(d => parseFloat(d.adv?.price)).filter(Boolean);
     if (prices?.length) { results.usdt = prices.reduce((a,b)=>a+b,0)/prices.length; fromApi = true; }
-    else if (results._paralelo) results.usdt = results._paralelo; // fallback al paralelo
+    else if (results._paralelo) results.usdt = results._paralelo;
   } catch (_) {
     if (results._paralelo) results.usdt = results._paralelo;
   }
@@ -520,8 +534,8 @@ export default function App() {
   const today = todayStr();
 
   const rateCards = [
-    { id:"bcv",          icon:"🏦", name:"Dólar BCV",           subtitle:"Banco Central de Venezuela", value:rates.bcv,          unit:"Bs/USD",  src:"dolarapi.com"  },
-    { id:"euro",         icon:"💶", name:"Euro BCV",             subtitle:"Cotización oficial EUR",     value:rates.euro,         unit:"Bs/EUR",  src:"dolarapi.com"  },
+    { id:"bcv",          icon:"🏦", name:"Dólar BCV",           subtitle:"Banco Central de Venezuela", value:rates.bcv,          unit:"Bs/USD",  src:"bcv.today"    },
+    { id:"euro",         icon:"💶", name:"Euro BCV",             subtitle:"Cotización oficial EUR",     value:rates.euro,         unit:"Bs/EUR",  src:"bcv.today"    },
     { id:"usdt",         icon:"₮",  name:"USDT / Paralelo",      subtitle:"Binance P2P · Monitor",      value:rates.usdt,         unit:"Bs/USDT", src:"Binance P2P"   },
     { id:"intervencion", icon:"📱", name:"Intervención Digital", subtitle:"Tasa BCV Bancos Digital",    value:rates.intervencion, unit:"Bs/USD",  src:"BCV Mensual"   },
   ];
