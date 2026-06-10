@@ -1,12 +1,12 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 
-const STORAGE_KEY = "vzla_cambio_cache";
+const STORAGE_KEY = "vzla_cambio_cache_v2";
 const CACHE_TTL = 12 * 60 * 60 * 1000;
 const APP_URL = typeof window !== "undefined" ? window.location.href : "https://claude.ai";
 
 const FALLBACK_RATES = {
-  bcv: 567.68,
-  euro: 655.38,
+  bcv: 572.68,          // BCV oficial USD — 10/06/2026
+  euro: 662.25,         // Euro BCV oficial — 10/06/2026
   usdt: 760.18,
   intervencion: 615.52,
 };
@@ -354,25 +354,41 @@ async function fetchRates() {
   const results = { ...FALLBACK_RATES };
   let fromApi = false;
 
-  // 1. dolarapi.com → BCV y Euro (fuente principal venezolana)
+  // 1. dolarapi.com endpoint oficial BCV → más confiable y sin límites
+  try {
+    const res = await fetch("https://ve.dolarapi.com/v1/dolares/oficial", { signal: AbortSignal.timeout(7000) });
+    const data = await res.json();
+    // Respuesta: { fuente, promedio, fechaActualizacion, ... }
+    if (data?.promedio && data.promedio > 100) {
+      results.bcv = data.promedio;
+      fromApi = true;
+    }
+  } catch (_) {}
+
+  // 2. Euro BCV vía dolarapi
   try {
     const res = await fetch("https://ve.dolarapi.com/v1/dolares", { signal: AbortSignal.timeout(7000) });
     const data = await res.json();
     if (Array.isArray(data)) {
-      const bcvData    = data.find(item => item.fuente === "bcv");
-      const euroData   = data.find(item => item.fuente === "bcv" && item.moneda === "EUR");
+      const euroData     = data.find(item => item.moneda === "EUR" || item.fuente === "euro");
       const paraleloData = data.find(item =>
         item.fuente === "paralelo" || item.fuente === "enparalelovzla" || item.fuente === "promedio"
       );
-
-      if (bcvData?.promedio   && bcvData.promedio > 100)   { results.bcv   = bcvData.promedio;   fromApi = true; }
-      if (euroData?.promedio  && euroData.promedio > 100)  { results.euro  = euroData.promedio; }
-      // Si la API devuelve paralelo, lo usamos como referencia de USDT cuando Binance falla
+      if (euroData?.promedio     && euroData.promedio > 100)     { results.euro     = euroData.promedio; }
       if (paraleloData?.promedio && paraleloData.promedio > 100) { results._paralelo = paraleloData.promedio; }
     }
   } catch (_) {}
 
-  // 2. USDT vía Binance P2P promedio
+  // Fallback Euro: bcv-api.deno.dev si dolarapi no trajo el euro
+  if (!results.euro || results.euro === FALLBACK_RATES.euro) {
+    try {
+      const res = await fetch("https://bcv-api.deno.dev/v1/exchange/euro", { signal: AbortSignal.timeout(6000) });
+      const data = await res.json();
+      if (data?.exchange && data.exchange > 100) { results.euro = data.exchange; }
+    } catch (_) {}
+  }
+
+  // 3. USDT vía Binance P2P promedio
   try {
     const res = await fetch("https://p2p.binance.com/bapi/c2c/v2/friendly/c2c/adv/search", {
       method: "POST", headers: { "Content-Type": "application/json" },
@@ -382,12 +398,12 @@ async function fetchRates() {
     const data = await res.json();
     const prices = data?.data?.map(d => parseFloat(d.adv?.price)).filter(Boolean);
     if (prices?.length) { results.usdt = prices.reduce((a,b)=>a+b,0)/prices.length; fromApi = true; }
-    else if (results._paralelo) results.usdt = results._paralelo; // fallback al paralelo
+    else if (results._paralelo) results.usdt = results._paralelo;
   } catch (_) {
     if (results._paralelo) results.usdt = results._paralelo;
   }
 
-  // 3. Intervención Digital – tasa fija mensual BCV
+  // 4. Intervención Digital – tasa fija mensual BCV
   results.intervencion = 615.52;
   results._fromApi = fromApi;
   return results;
@@ -520,8 +536,8 @@ export default function App() {
   const today = todayStr();
 
   const rateCards = [
-    { id:"bcv",          icon:"🏦", name:"Dólar BCV",           subtitle:"Banco Central de Venezuela", value:rates.bcv,          unit:"Bs/USD",  src:"dolarapi.com"  },
-    { id:"euro",         icon:"💶", name:"Euro BCV",             subtitle:"Cotización oficial EUR",     value:rates.euro,         unit:"Bs/EUR",  src:"dolarapi.com"  },
+    { id:"bcv",          icon:"🏦", name:"Dólar BCV",           subtitle:"Banco Central de Venezuela", value:rates.bcv,          unit:"Bs/USD",  src:"bcv.today"    },
+    { id:"euro",         icon:"💶", name:"Euro BCV",             subtitle:"Cotización oficial EUR",     value:rates.euro,         unit:"Bs/EUR",  src:"bcv.today"    },
     { id:"usdt",         icon:"₮",  name:"USDT / Paralelo",      subtitle:"Binance P2P · Monitor",      value:rates.usdt,         unit:"Bs/USDT", src:"Binance P2P"   },
     { id:"intervencion", icon:"📱", name:"Intervención Digital", subtitle:"Tasa BCV Bancos Digital",    value:rates.intervencion, unit:"Bs/USD",  src:"BCV Mensual"   },
   ];
