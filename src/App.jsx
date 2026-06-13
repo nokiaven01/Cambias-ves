@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 
-const STORAGE_KEY = "vzla_cambio_cache_v2";
-const CACHE_TTL = 12 * 60 * 60 * 1000;
+const STORAGE_KEY = "vzla_cambio_cache_v3";
+const CACHE_TTL = 4 * 60 * 60 * 1000; // 4 horas
 const APP_URL = typeof window !== "undefined" ? window.location.href : "https://claude.ai";
 
 const FALLBACK_RATES = {
@@ -149,6 +149,22 @@ const styles = `
   .result-value { font-family:'JetBrains Mono',monospace; font-size:15px; font-weight:600; color:#f1f5f9; word-break:break-all; }
   .result-value.empty { color:#334155; }
   .result-currency { font-size:10px; color:#475569; margin-top:2px; }
+
+  .btn-apk {
+    background: rgba(34,197,94,0.12); color: #4ade80;
+    border: 1px solid rgba(34,197,94,0.25);
+    font-size: 11px; padding: 7px 8px; border-radius: 10px;
+  }
+
+  /* EXTRA CONVERSION ROW (Bs↔USD inline summary) */
+  .extra-conv {
+    background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.07);
+    border-radius: 12px; padding: 10px 14px; margin-bottom: 12px;
+    display: flex; align-items: center; justify-content: space-between; gap: 8px;
+  }
+  .extra-conv-label { font-size: 10px; color: #64748b; font-family: 'JetBrains Mono', monospace; }
+  .extra-conv-value { font-size: 14px; font-weight: 700; color: #eab308; font-family: 'JetBrains Mono', monospace; }
+  .extra-conv-unit  { font-size: 10px; color: #475569; }
 
   /* CURRENCY TOGGLE */
   .currency-toggle {
@@ -607,7 +623,7 @@ export default function App() {
           }
         </div>
 
-        {/* ACTION ROW: Compartir · QR · Enviar cotización */}
+        {/* ACTION ROW: Compartir · QR · APK · Enviar cotización */}
         <div className="action-row">
           <button className="action-btn btn-share" onClick={handleShare}>
             🔗 Compartir
@@ -615,6 +631,9 @@ export default function App() {
           <button className="action-btn btn-qr" onClick={() => setModal("qr")}>
             ▦ QR
           </button>
+          <a className="action-btn btn-apk" href="https://t.me/cambiasves/2" target="_blank" rel="noreferrer">
+            ⬇ APK
+          </a>
           <button className="action-btn btn-wa-quote" onClick={sendWaCotizacion}>
             📤 Cotización
           </button>
@@ -677,6 +696,35 @@ export default function App() {
               value={amount} onChange={e => setAmount(e.target.value)}
             />
           </div>
+
+          {/* Extra conversion: Bs→USD o USD→Bs usando tasa BCV */}
+          {inputNum > 0 && rates.bcv && (
+            <div className="extra-conv">
+              {calcMode === "bs" ? (
+                <>
+                  <div>
+                    <div className="extra-conv-label">Equivale en USD (BCV)</div>
+                    <div className="extra-conv-value">${fmtConv(inputNum / rates.bcv)}</div>
+                  </div>
+                  <div style={{textAlign:"right"}}>
+                    <div className="extra-conv-label">Tasa usada</div>
+                    <div className="extra-conv-unit">{fmt(rates.bcv)} Bs/USD</div>
+                  </div>
+                </>
+              ) : (
+                <>
+                  <div>
+                    <div className="extra-conv-label">Equivale en Bs (BCV)</div>
+                    <div className="extra-conv-value">{fmt(inputNum * rates.bcv)} Bs</div>
+                  </div>
+                  <div style={{textAlign:"right"}}>
+                    <div className="extra-conv-label">Tasa usada</div>
+                    <div className="extra-conv-unit">{fmt(rates.bcv)} Bs/USD</div>
+                  </div>
+                </>
+              )}
+            </div>
+          )}
 
           {/* Results */}
           <div className="results-grid">
