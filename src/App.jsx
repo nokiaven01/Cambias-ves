@@ -166,7 +166,45 @@ const styles = `
   .extra-conv-value { font-size: 14px; font-weight: 700; color: #eab308; font-family: 'JetBrains Mono', monospace; }
   .extra-conv-unit  { font-size: 10px; color: #475569; }
 
-  /* CURRENCY TOGGLE */
+  /* FUEL CALCULATOR CARD */
+  .fuel-card {
+    background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.07);
+    border-radius: 14px; padding: 12px 14px; position: relative; overflow: hidden;
+    grid-column: span 2;
+  }
+  .fuel-card::after {
+    content: ''; position: absolute; bottom: 0; left: 0; right: 0; height: 2px;
+    border-radius: 0 0 14px 14px;
+    background: linear-gradient(to right, #f97316, #eab308);
+    opacity: 0.7;
+  }
+  .fuel-card::before {
+    content: ''; position: absolute; left: 0; top: 0; bottom: 0; width: 3px;
+    border-radius: 3px 0 0 3px;
+    background: linear-gradient(to bottom, #f97316, #eab308);
+  }
+  .fuel-header {
+    display: flex; align-items: center; gap: 8px; margin-bottom: 10px;
+  }
+  .fuel-icon {
+    width: 28px; height: 28px; border-radius: 8px;
+    background: rgba(249,115,22,0.15); display: flex; align-items: center;
+    justify-content: center; font-size: 15px; flex-shrink: 0;
+  }
+  .fuel-title { font-size: 12px; font-weight: 700; color: #f1f5f9; }
+  .fuel-subtitle { font-size: 10px; color: #64748b; margin-top: 1px; }
+  .fuel-rows { display: flex; flex-direction: column; gap: 6px; }
+  .fuel-row {
+    display: flex; align-items: center; justify-content: space-between;
+    background: rgba(0,0,0,0.2); border-radius: 8px; padding: 7px 10px;
+  }
+  .fuel-row-left { display: flex; flex-direction: column; }
+  .fuel-row-type { font-size: 10px; font-weight: 700; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.8px; }
+  .fuel-row-price { font-size: 9px; color: #475569; font-family: 'JetBrains Mono', monospace; margin-top: 1px; }
+  .fuel-row-liters { font-family: 'JetBrains Mono', monospace; font-size: 15px; font-weight: 700; color: #f97316; }
+  .fuel-row-unit { font-size: 9px; color: #64748b; margin-top: 1px; text-align: right; }
+  .fuel-empty { color: #334155; }
+
   .currency-toggle {
     display: flex; background: rgba(255,255,255,0.04);
     border: 1px solid rgba(255,255,255,0.08); border-radius: 14px;
@@ -549,6 +587,24 @@ export default function App() {
     usdt:         { label: calcMode==="bs" ? "USDT"        : "Bs · USDT",    currency: calcMode==="bs" ? "USDT"  : "Bs.S" },
     intervencion: { label: calcMode==="bs" ? "USD Digital" : "Bs · Digital", currency: calcMode==="bs" ? "USD"   : "Bs.S" },
   };
+
+  // Precios de gasolina Venezuela 2026 (Bs/litro usando tasa BCV)
+  const FUEL = [
+    { id:"subsidiada", label:"Subsidiada 91 oct", priceUSD: 0.024,  priceBs: null,  tag:"Cupo Patria · ~120 L/mes" },
+    { id:"internacional", label:"Internacional",  priceUSD: 0.50,   priceBs: null,  tag:"Sin límite · Biopago/divisas" },
+    { id:"premium",    label:"Super Premium 97",  priceUSD: 1.00,   priceBs: null,  tag:"Solo efectivo USD" },
+  ].map(f => ({
+    ...f,
+    priceBs: f.priceUSD * (rates.bcv || FALLBACK_RATES.bcv),
+  }));
+
+  // Litros que dan según modo y monto
+  const fuelLiters = inputNum > 0
+    ? FUEL.map(f => {
+        const montoBs = calcMode === "bs" ? inputNum : inputNum * (rates.bcv || FALLBACK_RATES.bcv);
+        return { ...f, liters: montoBs / f.priceBs };
+      })
+    : null;
   const today = todayStr();
 
   const rateCards = [
@@ -726,9 +782,41 @@ export default function App() {
             </div>
           )}
 
-          {/* Results */}
+          {/* Results grid — BCV slot replaced by fuel calculator */}
           <div className="results-grid">
-            {rateCards.map(card => (
+
+            {/* ⛽ CALCULADORA DE GASOLINA — ocupa el espacio de USD BCV */}
+            <div className="fuel-card">
+              <div className="fuel-header">
+                <div className="fuel-icon">⛽</div>
+                <div>
+                  <div className="fuel-title">Gasolina · Litros equivalentes</div>
+                  <div className="fuel-subtitle">Tasa BCV · Precios PDVSA 2026</div>
+                </div>
+              </div>
+              <div className="fuel-rows">
+                {FUEL.map(f => {
+                  const liters = fuelLiters?.find(l => l.id === f.id)?.liters;
+                  return (
+                    <div className="fuel-row" key={f.id}>
+                      <div className="fuel-row-left">
+                        <div className="fuel-row-type">{f.label}</div>
+                        <div className="fuel-row-price">{fmt(f.priceBs)} Bs/L · ${f.priceUSD.toFixed(3)}/L</div>
+                      </div>
+                      <div style={{textAlign:"right"}}>
+                        <div className={`fuel-row-liters ${!liters?"fuel-empty":""}`}>
+                          {liters ? fmtConv(liters) : "—"}
+                        </div>
+                        <div className="fuel-row-unit">litros</div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* Resto de tarjetas: Euro, USDT, Intervención */}
+            {rateCards.filter(c => c.id !== "bcv").map(card => (
               <div key={card.id} className={`result-card ${card.id}`}>
                 <div className="result-label">{resultMeta[card.id].label}</div>
                 <div className={`result-value ${conv[card.id]==null?"empty":""}`}>
