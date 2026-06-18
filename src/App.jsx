@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 
 const STORAGE_KEY = "vzla_cambio_cache_v3";
-const CACHE_TTL = 2 * 60 * 60 * 1000; // 1. ACTUALIZADO: Tasas se vencen cada 2 horas
+const CACHE_TTL = 2 * 60 * 60 * 1000; // 1. ACTUALIZADO: Tasas se vencen cada 2 hours
 const APP_URL = typeof window !== "undefined" ? window.location.href : "https://claude.ai";
 
 const FALLBACK_RATES = {
@@ -191,9 +191,7 @@ const styles = `
   .toggle-btn {
     flex: 1; padding: 10px 8px; border: none; border-radius: 10px; font-family: 'Exo 2', sans-serif;
     font-size: 13px; font-weight: 700; cursor: pointer; transition: all .2s ease; user-select: none;
-    display: flex; align-items: center; justify-content: center; gap: 6px; background: transparent; color: #475569;
-  }
-  .toggle-btn.active-bs {
+    display: flex; align-items: center; justify-content: center; gap: 6px; background: transparent; color: #475569;  .toggle-btn.active-bs {
     background: linear-gradient(135deg, #eab308, #ca8a04); color: #0a0d12; box-shadow: 0 2px 12px rgba(234,179,8,0.3);
   }
   .toggle-btn.active-usd {
@@ -330,4 +328,592 @@ const styles = `
     border-radius: 7px; padding: 5px 9px; font-size: 11px; font-weight: 600;
     color: #94a3b8; font-family: 'Exo 2', sans-serif; cursor: pointer; transition: all .15s; white-space: nowrap; flex-shrink: 0;
   }
-  .donate-wallet-copy:active { background: rgba(255,255,255,0.14); color: 
+  .donate-wallet-copy:active { background: rgba(255,255,255,0.14); color: #f1f5f9; transform: scale(0.95); }
+  .donate-thanks { text-align: center; font-size: 11px; color: #475569; margin-top: 14px; font-family: 'JetBrains Mono', monospace; line-height: 1.6; }
+  .donate-thanks span { color: #ec4899; }
+`;
+
+/* ─── FETCH RATES ─────────────────────────────────────────────────────── */
+async function fetchRates() {
+  const results = { ...FALLBACK_RATES };
+  let fromApi = false;
+
+  // 1. Dolarapi endpoint oficial BCV USD
+  try {
+    const res = await fetch("https://ve.dolarapi.com/v1/dolares/oficial", { signal: AbortSignal.timeout(7000) });
+    const data = await res.json();
+    if (data?.promedio && data.promedio > 100) {
+      results.bcv = data.promedio;
+      fromApi = true;
+    }
+  } catch (_) {}
+
+  // 2. ACTUALIZADO: Consulta dedicada e independiente al endpoint de Euros de dolarapi
+  try {
+    const res = await fetch("https://ve.dolarapi.com/v1/cotizaciones/euro", { signal: AbortSignal.timeout(7000) });
+    const data = await res.json();
+    if (data?.promedio && data.promedio > 100) {
+      results.euro = data.promedio;
+    }
+  } catch (_) {}
+
+  // Contingencia de Euro alternativa si dolarapi directo fallara
+  if (!results.euro || results.euro === FALLBACK_RATES.euro) {
+    try {
+      const res = await fetch("https://bcv-api.deno.dev/v1/exchange/euro", { signal: AbortSignal.timeout(6000) });
+      const data = await res.json();
+      if (data?.exchange && data.exchange > 100) {
+        results.euro = data.exchange;
+      }
+    } catch (_) {}
+  }
+
+  // 3. USDT vía Binance P2P promedio de ofertas de Venta (SELL)
+  try {
+    const res = await fetch("https://p2p.binance.com/bapi/c2c/v2/friendly/c2c/adv/search", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ asset: "USDT", fiat: "VES", merchantCheck: false, page: 1, rows: 10, tradeType: "SELL" }),
+      signal: AbortSignal.timeout(6000),
+    });
+    const data = await res.json();
+    const prices = data?.data?.map(d => parseFloat(d.adv?.price)).filter(Boolean);
+    if (prices?.length) {
+      results.usdt = prices.reduce((a,b) => a + b, 0) / prices.length;
+      fromApi = true;
+    }
+  } catch (_) {}
+
+  // 4. Intervención Digital fija
+  results.intervencion = 615.52;
+  results._fromApi = fromApi;
+  return results;
+}
+
+/* ─── HELPERS ─────────────────────────────────────────────────────────── */
+function fmt(val) {
+  if (!val) return "—";
+  return val.toLocaleString("es-VE", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+}
+function fmtConv(val) {
+  if (!val || isNaN(val)) return null;
+  if (val < 0.001) return val.toFixed(6);
+  if (val < 1) return val.toFixed(4);
+  if (val < 1000) return val.toFixed(2);
+  return val.toLocaleString("es-VE", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+}
+function todayStr() {
+  const n = new Date();
+  return `${String(n.getDate()).padStart(2,"0")}-${String(n.getMonth()+1).padStart(2,"0")}-${n.getFullYear()}`;
+}
+function lastUpdStr(ts) {
+  if (!ts) return "";
+  return new Date(ts).toLocaleString("es-VE",{hour:"2-digit",minute:"2-digit",day:"2-digit",month:"2-digit"});
+}
+function qrUrl(text) {
+  return `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(text)}&bgcolor=ffffff&color=0a0d12`;
+}
+
+// Generador de cadena de texto de la cotización para WhatsApp
+function buildWaQuote(rates, amount, calcMode, conv, today) {
+  const num = parseFloat(String(amount).replace(",",".")) || 0;
+  let msg = `🇻🇪 *Cotización de Tasas VES — ${today}*\n\n`;
+  msg += `💵 *BCV:* 1 $ = ${fmt(rates.bcv)} Bs\n`;
+  msg += `💶 *EURO:* 1 € = ${fmt(rates.euro)} Bs\n`;
+  msg += `🟢 *USDT:* 1 $ = ${fmt(rates.usdt)} Bs\n`;
+  msg += `🔸 *Intervención:* ${fmt(rates.intervencion)} Bs\n\n`;
+
+  if (num > 0) {
+    msg += `📊 *Conversión realizada:*\n`;
+    if (calcMode === "bs") {
+      msg += `> Input: *${num.toLocaleString("es-VE")} Bs*\n`;
+      msg += `> BCV: *${fmtConv(conv.bcv)} $* \n`;
+      msg += `> EURO: *${fmtConv(conv.euro)} €* \n`;
+      msg += `> USDT: *${fmtConv(conv.usdt)} USDT*\n`;
+    } else {
+      msg += `> Input: *${num.toLocaleString("es-VE")} $* (Divisas)\n`;
+      msg += `> A Bolívares (BCV): *${fmtConv(conv.bcv)} Bs*\n`;
+      msg += `> A Bolívares (USDT): *${fmtConv(conv.usdt)} Bs*\n`;
+    }
+    msg += `\n`;
+  }
+  msg += `_Generado automáticamente desde nuestra App_ 📲`;
+  return `https://api.whatsapp.com/send?text=${encodeURIComponent(msg)}`;
+}
+
+/* ─── MAIN COMPONENT ──────────────────────────────────────────────────── */
+export default function App() {
+  const [rates, setRates] = useState(FALLBACK_RATES);
+  const [loading, setLoading] = useState(true);
+  const [lastSync, setLastSync] = useState(null);
+  const [isOffline, setIsOffline] = useState(false);
+  const [toast, setToast] = useState(null);
+  const [modal, setModal] = useState(null);
+
+  // Estados del Convertidor
+  const [calcAmount, setCalcAmount] = useState("");
+  const [calcMode, setCalcMode] = useState("bs"); // 'bs' o 'usd'
+
+  // 5. ACTUALIZADO: Estado React para el menú colapsable/desplegable de apoyo
+  const [showDonations, setShowDonations] = useState(false);
+
+  const showToast = (msg) => {
+    setToast(msg);
+    setTimeout(() => setToast(null), 2500);
+  };
+
+  const loadRatesData = useCallback(async (forced = false) => {
+    setLoading(true);
+    if (!navigator.onLine) {
+      setIsOffline(true);
+      const cache = localStorage.getItem(STORAGE_KEY);
+      if (cache) {
+        const parsed = JSON.parse(cache);
+        setRates(parsed.rates);
+        setLastSync(parsed.timestamp);
+      }
+      setLoading(false);
+      return;
+    }
+
+    setIsOffline(false);
+    if (!forced) {
+      const cache = localStorage.getItem(STORAGE_KEY);
+      if (cache) {
+        const parsed = JSON.parse(cache);
+        if (Date.now() - parsed.timestamp < CACHE_TTL) {
+          setRates(parsed.rates);
+          setLastSync(parsed.timestamp);
+          setLoading(false);
+          return;
+        }
+      }
+    }
+
+    const freshRates = await fetchRates();
+    const newSync = Date.now();
+    setRates(freshRates);
+    setLastSync(newSync);
+    setLoading(false);
+
+    localStorage.setItem(STORAGE_KEY, JSON.stringify({ rates: freshRates, timestamp: newSync }));
+  }, []);
+
+  useEffect(() => {
+    loadRatesData();
+    
+    // 1. ACTUALIZADO: Intervalo cíclico interno para refrescar en segundo plano cada 2 horas
+    const interval = setInterval(() => {
+      loadRatesData(true);
+    }, CACHE_TTL);
+
+    const handleOnline = () => setIsOffline(false);
+    const handleOffline = () => setIsOffline(true);
+    window.addEventListener("online", handleOnline);
+    window.addEventListener("offline", handleOffline);
+
+    return () => {
+      clearInterval(interval);
+      window.removeEventListener("online", handleOnline);
+      window.removeEventListener("offline", handleOffline);
+    };
+  }, [loadRatesData]);
+
+  // Conversiones reactivas matemáticas
+  const amt = parseFloat(String(calcAmount).replace(",", ".")) || 0;
+  const conversions = { bcv: 0, euro: 0, usdt: 0, intervencion: 0 };
+
+  if (amt > 0) {
+    if (calcMode === "bs") {
+      conversions.bcv = amt / (rates.bcv || 1);
+      conversions.euro = amt / (rates.euro || 1);
+      conversions.usdt = amt / (rates.usdt || 1);
+      conversions.intervencion = amt / (rates.intervencion || 1);
+    } else {
+      conversions.bcv = amt * (rates.bcv || 0);
+      conversions.euro = amt * (rates.euro || 0);
+      conversions.usdt = amt * (rates.usdt || 0);
+      conversions.intervencion = amt * (rates.intervencion || 0);
+    }
+  }
+
+  // Funciones nativas de la App
+  const copyLink = () => {
+    navigator.clipboard.writeText(APP_URL);
+    showToast("¡Enlace web copiado!");
+    setModal(null);
+  };
+
+  const openWhatsAppShare = () => {
+    const waUrl = `https://api.whatsapp.com/send?text=${encodeURIComponent("Te comparto mi app de Monitoreo de Tasas CambioVES: " + APP_URL)}`;
+    window.open(waUrl, "_blank");
+    setModal(null);
+  };
+
+  const copyToClipboard = (text, label) => {
+    navigator.clipboard.writeText(text);
+    showToast(`¡Copiado: ${label}!`);
+  };
+
+  const handleDownloadApp = () => {
+    showToast("Iniciando la descarga del instalador...");
+    window.location.href = "#"; // Vincula aquí la ruta real de tu archivo de distribución
+  };
+
+  return (
+    <>
+      <style>{styles}</style>
+      <div className="app">
+        
+        {isOffline && (
+          <div className="offline-banner">
+            ⚠️ Modo Sin Conexión. Mostrando tasas guardadas en caché.
+          </div>
+        )}
+
+        {/* HEADER */}
+        <header className="header">
+          <div className="header-top">
+            <div className="flag-accent">
+              <div className="flag-bar yellow" />
+              <div className="flag-bar blue" />
+              <div className="flag-bar red" />
+              <h1 className="header-title">Cambio<span>VES</span></h1>
+            </div>
+
+            <div className={`sync-badge ${isOffline ? 'offline' : ''}`} onClick={() => loadRatesData(true)}>
+              <div className={`sync-dot ${loading ? 'loading' : isOffline ? 'offline-dot' : ''}`} />
+              <span>{loading ? "Cargando..." : isOffline ? "Offline" : "Actualizar"}</span>
+            </div>
+          </div>
+          <div className="last-update">
+            Sincronizado: {lastSync ? lastUpdStr(lastSync) : "Pendiente..."}
+          </div>
+        </header>
+
+        {/* ACTION ROW (4. ACTUALIZADO: Botón de cotización superior removido completamente) */}
+        <div className="action-row">
+          <button className="action-btn btn-share" onClick={() => setModal("share")}>
+            <span>🔗</span> Compartir Web
+          </button>
+          <button className="action-btn btn-qr" onClick={() => setModal("qr")}>
+            <span>📱</span> Código QR
+          </button>
+          {/* 6. ACTUALIZADO: Botón renombrado a Descarga App */}
+          <button className="action-btn btn-share btn-apk" onClick={handleDownloadApp}>
+            <span>📥</span> Descarga App
+          </button>
+        </div>
+
+        {/* RATES GRID */}
+        <div className="section-label">Tasas Oficiales</div>
+        <div className="rates-grid">
+          <div className="rate-card bcv">
+            <div className="rate-left">
+              <div className="rate-icon bcv">💵</div>
+              <div>
+                <div className="rate-name">BCV Oficial</div>
+                <div className="rate-subtitle">Banco Central de Venezuela</div>
+              </div>
+            </div>
+            <div className="rate-value">
+              <div className="rate-amount">{loading ? "..." : fmt(rates.bcv)}</div>
+              <div className="rate-unit">Bs / USD</div>
+            </div>
+          </div>
+
+          <div className="rate-card euro">
+            <div className="rate-left">
+              <div className="rate-icon euro">💶</div>
+              <div>
+                <div className="rate-name">Euro BCV</div>
+                <div className="rate-subtitle">Oficial del Estado</div>
+              </div>
+            </div>
+            <div className="rate-value">
+              <div className="rate-amount">{loading ? "..." : fmt(rates.euro)}</div>
+              <div className="rate-unit">Bs / EUR</div>
+            </div>
+          </div>
+
+          <div className="rate-card usdt">
+            <div className="rate-left">
+              <div className="rate-icon usdt">🟢</div>
+              <div>
+                <div className="rate-name">USDT C2C</div>
+                <div className="rate-subtitle">Promedio Binance P2P</div>
+              </div>
+            </div>
+            <div className="rate-value">
+              <div className="rate-amount">{loading ? "..." : fmt(rates.usdt)}</div>
+              <div className="rate-unit">Bs / USDT</div>
+            </div>
+          </div>
+
+          <div className="rate-card intervencion">
+            <div className="rate-left">
+              <div className="rate-icon intervencion">🔸</div>
+              <div>
+                <div className="rate-name">Intervención</div>
+                <div className="rate-subtitle">Tasa Bancaria Asignada</div>
+              </div>
+            </div>
+            <div className="rate-value">
+              <div className="rate-amount">{fmt(rates.intervencion)}</div>
+              <div className="rate-unit">Bs / USD</div>
+            </div>
+          </div>
+        </div>
+
+        <div className="divider" />
+
+        {/* CALCULATOR */}
+        <div className="calculator">
+          <div className="calc-title">Convertidor Inteligente</div>
+          
+          <div className="currency-toggle">
+            <button className={`toggle-btn ${calcMode === 'bs' ? 'active-bs' : ''}`} onClick={() => setCalcMode("bs")}>
+              🇻🇪 Bolívares
+            </button>
+            <button className={`toggle-btn ${calcMode === 'usd' ? 'active-usd' : ''}`} onClick={() => setCalcMode("usd")}>
+              💵 Dólares / USDT
+            </button>
+          </div>
+
+          <div className="input-wrapper">
+            {/* 3. ACTUALIZADO: Cambiado dinámicamente de Divisa a Dólares */}
+            <div className="input-label">
+              {calcMode === "bs" ? "Bolívares - Dólares" : "Dólares - Bolívares"}
+            </div>
+            <input
+              type="text"
+              className="bs-input"
+              inputMode="decimal"
+              placeholder="0,00"
+              value={calcAmount}
+              onChange={(e) => setCalcAmount(e.target.value)}
+            />
+          </div>
+
+          {amt > 0 && calcMode === "bs" && (
+            <div className="extra-conv">
+              <div className="extra-conv-label">Conversión base USD Oficial (BCV):</div>
+              <div className="extra-conv-value">{fmtConv(conversions.bcv)} <span className="extra-conv-unit">$</span></div>
+            </div>
+          )}
+
+          <div className="results-grid">
+            <div className="result-card bcv">
+              <div className="result-label">BCV Dólar</div>
+              <div className={`result-value ${amt === 0 ? 'empty' : ''}`}>
+                {amt === 0 ? "0,00" : fmtConv(conversions.bcv)}
+              </div>
+              <div className="result-currency">{calcMode === "bs" ? "USD ($)" : "VES (Bs)"}</div>
+            </div>
+
+            <div className="result-card euro">
+              <div className="result-label">BCV Euro</div>
+              <div className={`result-value ${amt === 0 ? 'empty' : ''}`}>
+                {amt === 0 ? "0,00" : fmtConv(conversions.euro)}
+              </div>
+              <div className="result-currency">{calcMode === "bs" ? "EUR (€)" : "VES (Bs)"}</div>
+            </div>
+
+            <div className="result-card usdt">
+              <div className="result-label">Binance USDT</div>
+              <div className={`result-value ${amt === 0 ? 'empty' : ''}`}>
+                {amt === 0 ? "0,00" : fmtConv(conversions.usdt)}
+              </div>
+              <div className="result-currency">{calcMode === "bs" ? "USDT" : "VES (Bs)"}</div>
+            </div>
+
+            <div className="result-card intervencion">
+              <div className="result-label">Intervención</div>
+              <div className={`result-value ${amt === 0 ? 'empty' : ''}`}>
+                {amt === 0 ? "0,00" : fmtConv(conversions.intervencion)}
+              </div>
+              <div className="result-currency">{calcMode === "bs" ? "USD ($)" : "VES (Bs)"}</div>
+            </div>
+
+            {/* FUEL ESTIMATION CARD */}
+            <div className="fuel-card">
+              <div className="fuel-header">
+                <div className="fuel-icon">⛽</div>
+                <div>
+                  <div className="fuel-title">Cálculo de Combustible</div>
+                  <div className="fuel-subtitle">Litros estimados según valor ingresado</div>
+                </div>
+              </div>
+              <div className="fuel-rows">
+                <div className="fuel-row">
+                  <div className="fuel-row-left">
+                    <span className="fuel-row-type">Subsidiado</span>
+                    <span className="fuel-row-price">Tasa: 0,10 Bs/L</span>
+                  </div>
+                  <span className="fuel-row-liters">
+                    {calcMode === "bs" && amt > 0 ? `${fmtConv(amt / 0.10)} L` : calcMode === "usd" && amt > 0 ? `${fmtConv((amt * rates.bcv) / 0.10)} L` : <span className="fuel-empty">—</span>}
+                  </span>
+                </div>
+                <div className="fuel-row">
+                  <div className="fuel-row-left">
+                    <span className="fuel-row-type">Internacional</span>
+                    <span className="fuel-row-price">Precio fijo: 0,50 $/L</span>
+                  </div>
+                  <span className="fuel-row-liters" style={{ color: '#f97316' }}>
+                    {calcMode === "bs" && amt > 0 ? `${fmtConv(amt / rates.bcv / 0.50)} L` : calcMode === "usd" && amt > 0 ? `${fmtConv(amt / 0.50)} L` : <span className="fuel-empty">—</span>}
+                  </span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* 4. ACTUALIZADO: Botón interactivo inferior para enviar cotizaciones directas a WhatsApp */}
+          <button 
+            className="wa-send-btn"
+            onClick={() => window.open(buildWaQuote(rates, calcAmount, calcMode, conversions, todayStr()), "_blank")}
+          >
+            💬 Enviar cotización por WhatsApp
+          </button>
+        </div>
+
+        {/* 5. ACTUALIZADO: Cabecera interactiva y bloque desplegable de Datos de Apoyo */}
+        <div 
+          className="donate-toggle-header" 
+          onClick={() => setShowDonations(!showDonations)}
+        >
+          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+            <span style={{ fontSize: '15px' }}>❤️</span>
+            <span style={{ fontSize: '12px', fontWeight: '700', color: '#f1f5f9', letterSpacing: '0.3px' }}>Datos de apoyo y cuentas</span>
+          </div>
+          <span className={`arrow-indicator ${showDonations ? 'rotated' : ''}`}>
+            {showDonations ? "▲ Ocultar" : "▼ Mostrar"}
+          </span>
+        </div>
+
+        <div className={`donate-wrapper-collapse ${showDonations ? 'open' : ''}`}>
+          <div className="donate-section-dropdown">
+            <div className="donate-header">
+              <div className="donate-heart">💝</div>
+              <div>
+                <div className="donate-title">¿Te es de utilidad la App?</div>
+                <div className="donate-subtitle">Puedes apoyar al mantenimiento del servidor</div>
+              </div>
+            </div>
+
+            <div className="donate-method pago-movil">
+              <div className="donate-method-header">
+                <div className="donate-method-left">
+                  <div className="donate-method-icon pago-movil">📱</div>
+                  <div>
+                    <div className="donate-method-name">Pago Móvil</div>
+                    <div className="donate-method-tag">Bancamiga (0172)</div>
+                  </div>
+                </div>
+                <button className="donate-copy-btn" onClick={() => copyToClipboard("0172 04126105342 16960856", "Pago Móvil Completo")}>
+                  Copiar Todo
+                </button>
+              </div>
+              <div className="donate-row">
+                <span className="donate-row-label">Cédula:</span>
+                <span className="donate-row-value">V-16.960.856</span>
+              </div>
+              <div className="donate-row">
+                <span className="donate-row-label">Teléfono:</span>
+                <span className="donate-row-value">0412-6105342</span>
+              </div>
+            </div>
+
+            <div className="donate-method trc20">
+              <div className="donate-method-header">
+                <div className="donate-method-left">
+                  <div className="donate-method-icon trc20">🪙</div>
+                  <div>
+                    <div className="donate-method-name">USDT (TRC-20)</div>
+                    <div className="donate-method-tag">Red TRON</div>
+                  </div>
+                </div>
+              </div>
+              <div className="donate-wallet">
+                <div className="donate-wallet-addr">TYX6H7wS7Yg9vXUvXgqC6gYgYgYgYgYgYgYgYg</div>
+                <button className="donate-wallet-copy" onClick={() => copyToClipboard("TYX6H7wS7Yg9vXUvXgqC6gYgYgYgYgYgYgYg", "Dirección TRC20")}>
+                  Copiar
+                </button>
+              </div>
+            </div>
+
+            <div className="donate-thanks">
+              Hecho con <span>♥</span> en Venezuela.
+            </div>
+          </div>
+        </div>
+
+        {/* FOOTER */}
+        <footer className="footer">
+          <div className="footer-divider" />
+          <div className="footer-text">
+            Tasas informativas actualizadas de APIs abiertas.<br />
+            App de uso personal v3.2.0 • <span className="highlight">{todayStr()}</span>
+          </div>
+        </footer>
+
+        {/* MODAL SHEET SYSTEM */}
+        {modal && (
+          <div className="modal-overlay" onClick={() => setModal(null)}>
+            <div className="modal-sheet" onClick={(e) => e.stopPropagation()}>
+              <div className="modal-handle" />
+              
+              {modal === "share" && (
+                <>
+                  <div className="modal-title">Compartir Aplicación</div>
+                  <div className="share-options" style={{ width: "100%" }}>
+                    <div className="share-opt" onClick={copyLink}>
+                      <div className="share-opt-icon">🔗</div>
+                      <div className="share-opt-text">
+                        <div className="share-opt-title">Copiar enlace</div>
+                        <div className="share-opt-desc">Para compartir manualmente</div>
+                      </div>
+                    </div>
+                    
+                    <div className="share-opt" onClick={openWhatsAppShare}>
+                      <div className="share-opt-icon">💬</div>
+                      <div className="share-opt-text">
+                        <div className="share-opt-title">Enviar por WhatsApp</div>
+                        <div className="share-opt-desc">Compartir enlace por chat</div>
+                      </div>
+                    </div>
+                  </div>
+                </>
+              )}
+
+              {modal === "qr" && (
+                <div className="qr-container">
+                  <div className="modal-title">Escanea el Código QR</div>
+                  <div className="qr-box">
+                    <img 
+                      src={qrUrl(APP_URL)} 
+                      alt="QR Cambio VES" 
+                      width={200} 
+                      height={200} 
+                      style={{ borderRadius: 8, display: "block" }} 
+                    />
+                  </div>
+                  <div className="qr-caption">
+                    Escanea para abrir la app<br />
+                    <span className="qr-url">{APP_URL}</span>
+                  </div>
+                </div>
+              )}
+
+              <button className="modal-close" onClick={() => setModal(null)}>Cerrar</button>
+            </div>
+          </div>
+        )}
+
+        {/* TOAST NOTIFICATION */}
+        {toast && <div className="toast">{toast}</div>}
+      </div>
+    </>
+  );
+}
+
+  }
