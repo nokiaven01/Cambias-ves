@@ -5,9 +5,9 @@ const CACHE_TTL = 2 * 60 * 60 * 1000; // 2 horas
 const APP_URL = typeof window !== "undefined" ? window.location.href : "https://claude.ai";
 
 const FALLBACK_RATES = {
-  bcv: 572.68,          // BCV oficial USD — 10/06/2026
-  euro: 662.25,         // Euro BCV oficial — 10/06/2026
-  usdt: 760.18,
+  bcv: 602.33,          // BCV oficial USD — 18/06/2026 (bcv.today)
+  euro: 698.22,         // Euro BCV oficial — 18/06/2026 (bcv.today)
+  usdt: 780.00,
   intervencion: 615.52,
 };
 
@@ -438,23 +438,34 @@ async function fetchRates() {
   const results = { ...FALLBACK_RATES };
   let fromApi = false;
 
-  // 1. FUENTE PRINCIPAL: dolarvzla.com → devuelve USD + EUR juntos en un solo endpoint, sin API key
-  // Respuesta: { current: { usd, eur, date }, previous: {...}, changePercentage: {...} }
+  // 1. FUENTE PRINCIPAL: bcv.today/api/v1/rate.json
+  //    JSON estático sin API key, CORS abierto, devuelve USD + EUR en un solo request.
+  //    Formato: { USD: 602.33, EUR: 698.22, updated_at, effective_date, date }
   try {
-    const res = await fetch("https://api.dolarvzla.com/bcv/current.json", { signal: AbortSignal.timeout(7000) });
+    const res = await fetch("https://bcv.today/api/v1/rate.json", {
+      cache: "no-cache",
+      signal: AbortSignal.timeout(7000),
+    });
     const data = await res.json();
-    if (data?.current?.usd && data.current.usd > 100) {
-      results.bcv  = data.current.usd;
-      fromApi = true;
-    }
-    if (data?.current?.eur && data.current.eur > 100) {
-      results.euro = data.current.eur;
-      fromApi = true;
-    }
+    if (data?.USD && data.USD > 100) { results.bcv  = data.USD; fromApi = true; }
+    if (data?.EUR && data.EUR > 100) { results.euro = data.EUR; fromApi = true; }
   } catch (_) {}
 
-  // 2. FALLBACK USD: dolarapi.com si dolarvzla no respondió
+  // 2. FALLBACK USD+EUR: jsDelivr CDN (espejo del mismo repo de bcv.today)
   if (!fromApi) {
+    try {
+      const res = await fetch(
+        "https://cdn.jsdelivr.net/gh/grupoclip/bcv-api/api/v1/rate.json",
+        { cache: "no-cache", signal: AbortSignal.timeout(7000) }
+      );
+      const data = await res.json();
+      if (data?.USD && data.USD > 100) { results.bcv  = data.USD; fromApi = true; }
+      if (data?.EUR && data.EUR > 100) { results.euro = data.EUR; fromApi = true; }
+    } catch (_) {}
+  }
+
+  // 3. FALLBACK USD: ve.dolarapi.com (solo si aun no tenemos USD)
+  if (results.bcv === FALLBACK_RATES.bcv) {
     try {
       const res = await fetch("https://ve.dolarapi.com/v1/dolares/oficial", { signal: AbortSignal.timeout(7000) });
       const data = await res.json();
@@ -462,36 +473,16 @@ async function fetchRates() {
     } catch (_) {}
   }
 
-  // 3. FALLBACK EURO: si dolarvzla no trajo el euro, intentar dolarapi y bcv-api
-  if (!results.euro || results.euro === FALLBACK_RATES.euro) {
-    try {
-      const res = await fetch("https://ve.dolarapi.com/v1/dolares", { signal: AbortSignal.timeout(7000) });
-      const data = await res.json();
-      if (Array.isArray(data)) {
-        const euroData = data.find(item =>
-          item.moneda === "EUR" || item.fuente === "euro" ||
-          (item.nombre && item.nombre.toLowerCase().includes("euro"))
-        );
-        const paraleloData = data.find(item =>
-          item.fuente === "paralelo" || item.fuente === "enparalelovzla" || item.fuente === "promedio"
-        );
-        if (euroData?.promedio && euroData.promedio > 100) { results.euro = euroData.promedio; }
-        else if (euroData?.precio && euroData.precio > 100) { results.euro = euroData.precio; }
-        if (paraleloData?.promedio && paraleloData.promedio > 100) { results._paralelo = paraleloData.promedio; }
-      }
-    } catch (_) {}
-  }
-
-  // 4. FALLBACK EURO final: bcv-api.deno.dev
-  if (!results.euro || results.euro === FALLBACK_RATES.euro) {
+  // 4. FALLBACK EURO: bcv-api.deno.dev (solo si aun no tenemos EUR)
+  if (results.euro === FALLBACK_RATES.euro) {
     try {
       const res = await fetch("https://bcv-api.deno.dev/v1/exchange/euro", { signal: AbortSignal.timeout(6000) });
       const data = await res.json();
-      if (data?.exchange && data.exchange > 100) { results.euro = data.exchange; }
+      if (data?.exchange && data.exchange > 100) { results.euro = data.exchange; fromApi = true; }
     } catch (_) {}
   }
 
-  // 3. USDT vía Binance P2P promedio
+  // 5. USDT via Binance P2P promedio
   try {
     const res = await fetch("https://p2p.binance.com/bapi/c2c/v2/friendly/c2c/adv/search", {
       method: "POST", headers: { "Content-Type": "application/json" },
@@ -501,16 +492,14 @@ async function fetchRates() {
     const data = await res.json();
     const prices = data?.data?.map(d => parseFloat(d.adv?.price)).filter(Boolean);
     if (prices?.length) { results.usdt = prices.reduce((a,b)=>a+b,0)/prices.length; fromApi = true; }
-    else if (results._paralelo) results.usdt = results._paralelo;
-  } catch (_) {
-    if (results._paralelo) results.usdt = results._paralelo;
-  }
+  } catch (_) {}
 
-  // 4. Intervención Digital – tasa fija mensual BCV
+  // 6. Intervencion Digital - tasa fija mensual BCV
   results.intervencion = 615.52;
   results._fromApi = fromApi;
   return results;
 }
+
 
 /* ─── HELPERS ─────────────────────────────────────────────────────────── */
 function fmt(val) {
