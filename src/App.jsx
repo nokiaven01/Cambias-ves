@@ -8,6 +8,7 @@ const FALLBACK_RATES = {
   bcv: 602.33,          // BCV oficial USD — 18/06/2026 (bcv.today)
   euro: 698.22,         // Euro BCV oficial — 18/06/2026 (bcv.today)
   usdt: 780.00,
+  usdc: 778.00,         // USDC Binance P2P — promedio diario
   intervencion: 615.52,
 };
 
@@ -101,6 +102,7 @@ const styles = `
   .rate-card.bcv::before          { background:linear-gradient(to bottom,#3b82f6,#1d4ed8); }
   .rate-card.euro::before         { background:linear-gradient(to bottom,#8b5cf6,#6d28d9); }
   .rate-card.usdt::before         { background:linear-gradient(to bottom,#10b981,#059669); }
+  .rate-card.usdc::before         { background:linear-gradient(to bottom,#06b6d4,#0891b2); }
   .rate-card.intervencion::before { background:linear-gradient(to bottom,#f59e0b,#d97706); }
   .rate-card:active { transform:scale(0.98); background:rgba(255,255,255,0.05); }
   .rate-left { display:flex; align-items:center; gap:12px; }
@@ -108,6 +110,7 @@ const styles = `
   .rate-icon.bcv          { background:rgba(59,130,246,0.15); }
   .rate-icon.euro         { background:rgba(139,92,246,0.15); }
   .rate-icon.usdt         { background:rgba(16,185,129,0.15); }
+  .rate-icon.usdc         { background:rgba(6,182,212,0.15); }
   .rate-icon.intervencion { background:rgba(245,158,11,0.15); }
   .rate-name { font-size:14px; font-weight:700; color:#f1f5f9; line-height:1.2; }
   .rate-subtitle { font-size:11px; color:#64748b; margin-top:1px; }
@@ -144,6 +147,7 @@ const styles = `
   .result-card.bcv::after          { background:linear-gradient(to right,#3b82f6,#1d4ed8); }
   .result-card.euro::after         { background:linear-gradient(to right,#8b5cf6,#6d28d9); }
   .result-card.usdt::after         { background:linear-gradient(to right,#10b981,#059669); }
+  .result-card.usdc::after         { background:linear-gradient(to right,#06b6d4,#0891b2); }
   .result-card.intervencion::after { background:linear-gradient(to right,#f59e0b,#d97706); }
   .result-label { font-size:10px; font-weight:700; letter-spacing:1px; text-transform:uppercase; color:#64748b; margin-bottom:6px; }
   .result-value { font-family:'JetBrains Mono',monospace; font-size:15px; font-weight:600; color:#f1f5f9; word-break:break-all; }
@@ -270,6 +274,51 @@ const styles = `
   .share-opt-title { font-size:14px; font-weight:700; color:#f1f5f9; }
   .share-opt-desc  { font-size:11px; color:#64748b; margin-top:2px; }
   .share-opt-arrow { color:#475569; font-size:16px; }
+
+  /* PAGO MÓVIL FORM (cotización WhatsApp) */
+  .pm-intro { font-size:12px; color:#94a3b8; text-align:center; margin:-8px 0 16px; line-height:1.5; }
+  .pm-toggle {
+    display:flex; align-items:center; justify-content:space-between; gap:10px;
+    background:rgba(234,179,8,0.08); border:1px solid rgba(234,179,8,0.2);
+    border-radius:12px; padding:11px 14px; margin-bottom:14px; cursor:pointer; user-select:none;
+  }
+  .pm-toggle-text { font-size:13px; font-weight:700; color:#fbbf24; display:flex; align-items:center; gap:8px; }
+  .pm-switch { width:40px; height:22px; border-radius:20px; background:rgba(255,255,255,0.12); position:relative; transition:all .2s; flex-shrink:0; }
+  .pm-switch.on { background:rgba(234,179,8,0.5); }
+  .pm-switch::after { content:''; position:absolute; top:2px; left:2px; width:18px; height:18px; border-radius:50%; background:#f1f5f9; transition:all .2s; }
+  .pm-switch.on::after { left:20px; }
+  .pm-form { display:flex; flex-direction:column; gap:10px; margin-bottom:6px; }
+  .pm-field { display:flex; flex-direction:column; gap:5px; }
+  .pm-field-label { font-size:11px; font-weight:700; color:#94a3b8; letter-spacing:0.3px; padding-left:2px; }
+  .pm-input {
+    background:rgba(255,255,255,0.04); border:1px solid rgba(255,255,255,0.1);
+    border-radius:10px; padding:11px 13px; color:#f1f5f9;
+    font-family:'Exo 2',sans-serif; font-size:14px; font-weight:600; outline:none; transition:all .15s; width:100%;
+  }
+  .pm-input:focus { border-color:rgba(234,179,8,0.4); background:rgba(234,179,8,0.04); }
+  .pm-input::placeholder { color:#475569; font-weight:400; }
+  .pm-send-btn {
+    display:flex; align-items:center; justify-content:center; gap:8px;
+    width:100%; margin-top:8px; padding:14px;
+    background:rgba(34,197,94,0.15); border:1px solid rgba(34,197,94,0.3);
+    border-radius:14px; color:#4ade80; font-family:'Exo 2',sans-serif;
+    font-size:14px; font-weight:800; cursor:pointer; transition:all .18s; user-select:none;
+  }
+  .pm-send-btn:active { transform:scale(0.97); background:rgba(34,197,94,0.25); }
+
+  /* SELECTOR DE TASA PARA EL PAGO */
+  .pm-section-label { font-size:11px; font-weight:800; color:#94a3b8; letter-spacing:0.5px; text-transform:uppercase; margin:4px 0 10px; }
+  .pm-rates { display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-bottom:16px; }
+  .pm-rate-chip {
+    display:flex; flex-direction:column; gap:2px;
+    background:rgba(255,255,255,0.04); border:1px solid rgba(255,255,255,0.1);
+    border-radius:12px; padding:10px 12px; cursor:pointer; transition:all .15s; user-select:none;
+  }
+  .pm-rate-chip:active { transform:scale(0.97); }
+  .pm-rate-chip.sel { background:rgba(34,197,94,0.12); border-color:rgba(34,197,94,0.45); }
+  .pm-rate-name { font-size:13px; font-weight:700; color:#f1f5f9; display:flex; align-items:center; gap:6px; }
+  .pm-rate-val { font-size:12px; color:#94a3b8; font-family:'JetBrains Mono',monospace; }
+  .pm-rate-chip.sel .pm-rate-val { color:#4ade80; }
 
   /* QR CONTAINER */
   .qr-wrap { display:flex; flex-direction:column; align-items:center; gap:14px; }
@@ -494,6 +543,18 @@ async function fetchRates() {
     if (prices?.length) { results.usdt = prices.reduce((a,b)=>a+b,0)/prices.length; fromApi = true; }
   } catch (_) {}
 
+  // 5b. USDC via Binance P2P promedio diario
+  try {
+    const res = await fetch("https://p2p.binance.com/bapi/c2c/v2/friendly/c2c/adv/search", {
+      method: "POST", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ asset: "USDC", fiat: "VES", merchantCheck: false, page: 1, rows: 10, tradeType: "SELL" }),
+      signal: AbortSignal.timeout(6000),
+    });
+    const data = await res.json();
+    const prices = data?.data?.map(d => parseFloat(d.adv?.price)).filter(Boolean);
+    if (prices?.length) { results.usdc = prices.reduce((a,b)=>a+b,0)/prices.length; fromApi = true; }
+  } catch (_) {}
+
   // 6. Intervencion Digital - tasa fija mensual BCV
   results.intervencion = 615.52;
   results._fromApi = fromApi;
@@ -513,6 +574,49 @@ function fmtConv(val) {
   if (val < 1000)  return val.toFixed(2);
   return val.toLocaleString("es-VE", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 }
+/* Formato de monto VE para el input usando Intl.NumberFormat (es-VE).
+   - Agrupa miles con "." y usa "," como separador decimal.
+   - Permite escribir decimales en vivo (no fuerza los 2 decimales mientras escribes).
+   - La precisión exacta de 2 decimales se aplica al salir del campo (blurAmount). */
+const veIntFmt = new Intl.NumberFormat("es-VE", { style: "decimal", maximumFractionDigits: 0 });
+function formatVEInput(amount) {
+  if (amount === "" || amount == null) return "";
+  const [intStr, decStr] = String(amount).split(".");
+  const intNum = parseInt(intStr || "0", 10) || 0;
+  const intFmt = veIntFmt.format(intNum);
+  if (decStr === undefined) return intFmt;       // aún sin coma
+  return `${intFmt},${decStr.slice(0, 2)}`;       // conserva lo que escribe (máx 2)
+}
+/* Normaliza lo que escribe el usuario a un número limpio ("1234.56"), máx 2 decimales.
+   Detección inteligente del separador decimal:
+   - Si hay coma → la coma es el decimal (convención venezolana), los puntos son miles.
+   - Si solo hay puntos → el último punto se toma como decimal si lo siguen ≤2 dígitos
+     (ej: "1650.15" → 1650.15); si lo siguen 3+ dígitos, todos los puntos son miles
+     (ej: "1.234.567" → 1234567). Los miles se agrupan solos al mostrar. */
+function cleanVEAmount(value) {
+  let v = String(value).replace(/[^0-9.,]/g, "");
+  if (v.includes(",")) {
+    const li = v.lastIndexOf(",");
+    const intp = v.slice(0, li).replace(/\D/g, "");
+    const dec = v.slice(li + 1).replace(/\D/g, "").slice(0, 2);
+    return `${intp}.${dec}`;
+  }
+  if (v.includes(".")) {
+    const li = v.lastIndexOf(".");
+    const after = v.slice(li + 1).replace(/\D/g, "");
+    if (after.length <= 2) {
+      const intp = v.slice(0, li).replace(/\D/g, "");
+      return `${intp}.${after}`;
+    }
+    return v.replace(/\./g, "");
+  }
+  return v;
+}
+/* Formato de precisión final: 2 decimales exactos (es-VE) */
+function toPreciseAmount(amount) {
+  const n = parseFloat(amount);
+  return isNaN(n) ? "" : n.toFixed(2);
+}
 function todayStr() {
   const n = new Date();
   return `${String(n.getDate()).padStart(2,"0")}-${String(n.getMonth()+1).padStart(2,"0")}-${n.getFullYear()}`;
@@ -528,12 +632,13 @@ function qrUrl(text) {
 }
 
 /* Build WhatsApp cotización message */
-function buildWaQuote(rates, amount, calcMode, conv, today) {
-  const num = parseFloat(String(amount).replace(",",".")) || 0;
+function buildWaQuote(rates, amount, calcMode, conv, today, pagoMovil, tasaPago) {
+  const num = parseFloat(amount) || 0;
   let msg = `🇻🇪 *Cotizaciones BCV - ${today}*\n\n`;
   msg += `🏦 Dólar BCV:         *${fmt(rates.bcv)} Bs/USD*\n`;
   msg += `💶 Euro BCV:          *${fmt(rates.euro)} Bs/EUR*\n`;
-  msg += `₮  USDT Binance:     *${fmt(rates.usdt)} Bs/USDT*\n`;
+  msg += `₮  USDT:             *${fmt(rates.usdt)} Bs/USDT*\n`;
+  msg += `Ⓒ  USDC:             *${fmt(rates.usdc)} Bs/USDC*\n`;
   msg += `📱 Intervención Dig: *${fmt(rates.intervencion)} Bs/USD*\n`;
   if (num > 0) {
     const fromLabel = calcMode === "bs" ? `${fmt(num)} Bs` : `${fmtConv(num)} USD`;
@@ -542,12 +647,39 @@ function buildWaQuote(rates, amount, calcMode, conv, today) {
       if (conv.bcv != null)          msg += `  → USD BCV:     *${fmtConv(conv.bcv)} $*\n`;
       if (conv.euro != null)         msg += `  → EUR BCV:     *${fmtConv(conv.euro)} €*\n`;
       if (conv.usdt != null)         msg += `  → USDT:        *${fmtConv(conv.usdt)} ₮*\n`;
+      if (conv.usdc != null)         msg += `  → USDC:        *${fmtConv(conv.usdc)} Ⓒ*\n`;
       if (conv.intervencion != null) msg += `  → USD Digital: *${fmtConv(conv.intervencion)} $*\n`;
     } else {
       if (conv.bcv != null)          msg += `  → Bs (BCV):     *${fmtConv(conv.bcv)} Bs*\n`;
       if (conv.euro != null)         msg += `  → Bs (Euro):    *${fmtConv(conv.euro)} Bs*\n`;
       if (conv.usdt != null)         msg += `  → Bs (USDT):    *${fmtConv(conv.usdt)} Bs*\n`;
+      if (conv.usdc != null)         msg += `  → Bs (USDC):    *${fmtConv(conv.usdc)} Bs*\n`;
       if (conv.intervencion != null) msg += `  → Bs (Digital): *${fmtConv(conv.intervencion)} Bs*\n`;
+    }
+  }
+  // Tasa elegida para realizar el pago
+  if (tasaPago && rates[tasaPago] != null) {
+    const TASA_LABELS = {
+      bcv: "Dólar BCV", euro: "Euro BCV", usdt: "USDT",
+      usdc: "USDC", intervencion: "Intervención Digital",
+    };
+    const TASA_UNIT = {
+      bcv: "Bs/USD", euro: "Bs/EUR", usdt: "Bs/USDT",
+      usdc: "Bs/USDC", intervencion: "Bs/USD",
+    };
+    msg += `\n💲 *El pago debe realizarse a la tasa ${TASA_LABELS[tasaPago]}: ${fmt(rates[tasaPago])} ${TASA_UNIT[tasaPago]}*\n`;
+  }
+  // Datos de Pago Móvil (opcional, los llena el usuario antes de enviar)
+  if (pagoMovil) {
+    const pmRows = [
+      { label: "🏦 Banco",    value: pagoMovil.banco },
+      { label: "📱 Teléfono", value: pagoMovil.telefono },
+      { label: "🪪 Cédula/RIF", value: pagoMovil.cedula },
+      { label: "👤 Titular",  value: pagoMovil.titular },
+    ].filter(r => r.value && String(r.value).trim());
+    if (pmRows.length) {
+      msg += `\n\n📲 *Datos para Pago Móvil:*\n`;
+      pmRows.forEach(r => { msg += `${r.label}: *${String(r.value).trim()}*\n`; });
     }
   }
   msg += `\n_Cambio VES · Sincronización vía API_`;
@@ -563,10 +695,29 @@ export default function App() {
   const [isOnline, setIsOnline]   = useState(typeof navigator !== "undefined" ? navigator.onLine : true);
   const [calcMode, setCalcMode]   = useState("bs"); // "bs" | "usd"
   const [amount, setAmount]       = useState("");
-  const [modal, setModal]         = useState(null); // null | 'share' | 'qr'
+  const [modal, setModal]         = useState(null); // null | 'share' | 'qr' | 'cotizacion'
   const [toast, setToast]         = useState(null);
   const [showDonate, setShowDonate] = useState(false);
   const toastTimer = useRef(null);
+
+  /* Datos de Pago Móvil del usuario (se guardan localmente para no reescribirlos) */
+  const PM_KEY = "vzla_pago_movil_v1";
+  const [incluirPago, setIncluirPago] = useState(true);
+  const [tasaPago, setTasaPago] = useState("bcv"); // tasa elegida para el pago
+  const [pagoMovil, setPagoMovil] = useState(() => {
+    try {
+      const saved = localStorage.getItem(PM_KEY);
+      if (saved) return JSON.parse(saved);
+    } catch (_) {}
+    return { banco: "", telefono: "", cedula: "", titular: "" };
+  });
+  const updatePago = (field, value) => {
+    setPagoMovil(prev => {
+      const next = { ...prev, [field]: value };
+      try { localStorage.setItem(PM_KEY, JSON.stringify(next)); } catch (_) {}
+      return next;
+    });
+  };
 
   /* Online/offline listeners */
   useEffect(() => {
@@ -582,6 +733,16 @@ export default function App() {
     setToast(msg);
     clearTimeout(toastTimer.current);
     toastTimer.current = setTimeout(() => setToast(null), 2200);
+  };
+
+  /* Monto estilo "centavos": los dígitos entran por la derecha, los 2 últimos
+     son decimales. Formatea en vivo (es-VE) sin saltos de cursor ni ambigüedad. */
+  const veMontoFmt = new Intl.NumberFormat("es-VE", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  const handleAmountChange = (e) => {
+    const soloNumeros = e.target.value.replace(/\D/g, "");
+    if (!soloNumeros) { setAmount(""); return; }
+    const numeroFlotante = parseInt(soloNumeros, 10) / 100;
+    setAmount(veMontoFmt.format(numeroFlotante));
   };
 
   /* Load rates with localStorage cache */
@@ -612,7 +773,7 @@ export default function App() {
   }, [loadRates]);
 
   /* Derived – dual mode calculator */
-  const inputNum = parseFloat(String(amount).replace(",",".")) || 0;
+  const inputNum = parseFloat(cleanVEAmount(amount)) || 0;
 
   // When mode=bs: input is Bolívares → results in foreign currency
   // When mode=usd: input is USD → results in Bolívares via each rate
@@ -620,15 +781,17 @@ export default function App() {
     bcv:          inputNum && rates.bcv          ? (calcMode==="bs" ? inputNum/rates.bcv          : inputNum*rates.bcv)          : null,
     euro:         inputNum && rates.euro         ? (calcMode==="bs" ? inputNum/rates.euro         : inputNum*rates.euro)         : null,
     usdt:         inputNum && rates.usdt         ? (calcMode==="bs" ? inputNum/rates.usdt         : inputNum*rates.usdt)         : null,
+    usdc:         inputNum && rates.usdc         ? (calcMode==="bs" ? inputNum/rates.usdc         : inputNum*rates.usdc)         : null,
     intervencion: inputNum && rates.intervencion ? (calcMode==="bs" ? inputNum/rates.intervencion : inputNum*rates.intervencion) : null,
   };
 
   // Result labels & currencies change with mode
   const resultMeta = {
-    bcv:          { label: calcMode==="bs" ? "USD BCV"     : "Bs · BCV",     currency: calcMode==="bs" ? "USD"   : "Bs.S" },
-    euro:         { label: calcMode==="bs" ? "EUR BCV"     : "Bs · Euro",    currency: calcMode==="bs" ? "Euros" : "Bs.S" },
-    usdt:         { label: calcMode==="bs" ? "USDT"        : "Bs · USDT",    currency: calcMode==="bs" ? "USDT"  : "Bs.S" },
-    intervencion: { label: calcMode==="bs" ? "USD Digital" : "Bs · Digital", currency: calcMode==="bs" ? "USD"   : "Bs.S" },
+    bcv:          { label: calcMode==="bs" ? "USD BCV"     : "Bs · BCV",     currency: calcMode==="bs" ? "USD"   : "Bs." },
+    euro:         { label: calcMode==="bs" ? "EUR BCV"     : "Bs · Euro",    currency: calcMode==="bs" ? "Euros" : "Bs." },
+    usdt:         { label: calcMode==="bs" ? "USDT"        : "Bs · USDT",    currency: calcMode==="bs" ? "USDT"  : "Bs." },
+    usdc:         { label: calcMode==="bs" ? "USDC"        : "Bs · USDC",    currency: calcMode==="bs" ? "USDC"  : "Bs." },
+    intervencion: { label: calcMode==="bs" ? "USD Digital" : "Bs · Digital", currency: calcMode==="bs" ? "USD"   : "Bs." },
   };
 
   // Precios de gasolina Venezuela 2026 (Bs/litro usando tasa BCV)
@@ -653,8 +816,9 @@ export default function App() {
   const rateCards = [
     { id:"bcv",          icon:"🏦", name:"Dólar BCV",           subtitle:"Banco Central de Venezuela", value:rates.bcv,          unit:"Bs/USD",  src:"bcv.today"    },
     { id:"euro",         icon:"💶", name:"Euro BCV",             subtitle:"Cotización oficial EUR",     value:rates.euro,         unit:"Bs/EUR",  src:"bcv.today"    },
-    { id:"usdt",         icon:"₮",  name:"USDT / Paralelo",      subtitle:"Binance P2P · Monitor",      value:rates.usdt,         unit:"Bs/USDT", src:"Binance P2P"   },
-    { id:"intervencion", icon:"📱", name:"Intervención Digital", subtitle:"Tasa BCV Bancos Digital",    value:rates.intervencion, unit:"Bs/USD",  src:"BCV Mensual"   },
+    { id:"usdt",         icon:"₮",  name:"USDT",                 subtitle:"Binance P2P · Promedio",     value:rates.usdt,         unit:"Bs/USDT", src:"Binance P2P"   },
+    { id:"usdc",         icon:"Ⓒ", name:"USDC",                 subtitle:"Binance P2P · Promedio",     value:rates.usdc,         unit:"Bs/USDC", src:"Binance P2P"   },
+    { id:"intervencion", icon:"📱", name:"Intervención Digital", subtitle:"Tasa BCV venta $ Digital",   value:rates.intervencion, unit:"Bs/USD",  src:"BCV Mensual"   },
   ];
 
   /* ── Share actions ── */
@@ -685,9 +849,15 @@ export default function App() {
   };
 
   /* ── WA Cotización ── */
-  const sendWaCotizacion = () => {
-    const msg = buildWaQuote(rates, amount, calcMode, conv, today);
+  // Abre el formulario de Pago Móvil antes de enviar
+  const sendWaCotizacion = () => setModal("cotizacion");
+
+  // Confirma y envía la cotización por WhatsApp (con o sin datos de Pago Móvil)
+  const confirmWaCotizacion = () => {
+    const pm = incluirPago ? pagoMovil : null;
+    const msg = buildWaQuote(rates, inputNum, calcMode, conv, today, pm, tasaPago);
     window.open(`https://wa.me/?text=${encodeURIComponent(msg)}`, "_blank");
+    setModal(null);
   };
 
   return (
@@ -722,13 +892,10 @@ export default function App() {
           }
         </div>
 
-        {/* ACTION ROW: Compartir · QR · Descarga App */}
+        {/* ACTION ROW: Compartir (enlace + QR) · Descarga App */}
         <div className="action-row">
-          <button className="action-btn btn-share" onClick={handleShare}>
-            🔗 Compartir
-          </button>
-          <button className="action-btn btn-qr" onClick={() => setModal("qr")}>
-            ▦ QR
+          <button className="action-btn btn-share" onClick={() => setModal("share")}>
+            🔗 Compartir / QR
           </button>
           <a className="action-btn btn-apk" href="https://t.me/cambiasves/2" target="_blank" rel="noreferrer">
             ⬇ Descarga App
@@ -783,13 +950,14 @@ export default function App() {
           {/* Input */}
           <div className="input-wrapper">
             <span className="input-label" style={calcMode==="usd"?{background:"rgba(59,130,246,0.15)",color:"#60a5fa"}:{}}>
-              {calcMode==="bs" ? "Bs.S" : "USD $"}
+              {calcMode==="bs" ? "Bs." : "USD $"}
             </span>
             <input
               className="bs-input"
-              type="number" inputMode="decimal"
-              placeholder={calcMode==="bs" ? "Monto en bolívares" : "Monto en dólares"}
-              value={amount} onChange={e => setAmount(e.target.value)}
+              type="text" inputMode="numeric"
+              placeholder="0,00"
+              value={amount}
+              onChange={handleAmountChange}
             />
           </div>
 
@@ -986,10 +1154,101 @@ export default function App() {
             Sincronización vía API.<br/>
             Las cotizaciones del BCV son las oficiales vigentes para:{" "}
             <span className="highlight">{today}</span>.<br/>
-            Se utiliza la API de Binance para obtener el promedio de USDT.
+            Se utiliza la API de Binance para obtener el promedio diario de USDT y USDC.
           </div>
         </div>
       </div>
+
+      {/* ── MODAL: COTIZACIÓN + PAGO MÓVIL ── */}
+      {modal === "cotizacion" && (
+        <div className="modal-overlay" onClick={() => setModal(null)}>
+          <div className="modal-sheet" onClick={e => e.stopPropagation()}>
+            <div className="modal-handle" />
+            <div className="modal-title">Enviar cotización por WhatsApp</div>
+            <div className="pm-intro">
+              Elige la tasa para el pago y agrega tus datos de Pago Móvil.
+              Todo se incluirá en el mensaje.
+            </div>
+
+            {/* Selector de tasa para el pago (una de las 5 tasas) */}
+            <div className="pm-section-label">💲 Pagar a la tasa de:</div>
+            <div className="pm-rates">
+              {rateCards.map(card => (
+                <div
+                  key={card.id}
+                  className={`pm-rate-chip ${tasaPago === card.id ? "sel" : ""}`}
+                  onClick={() => setTasaPago(card.id)}
+                >
+                  <div className="pm-rate-name">
+                    <span>{card.icon}</span> {card.name}
+                  </div>
+                  <div className="pm-rate-val">{fmt(card.value)} {card.unit}</div>
+                </div>
+              ))}
+            </div>
+
+            <div
+              className="pm-toggle"
+              onClick={() => setIncluirPago(v => !v)}
+            >
+              <div className="pm-toggle-text">📲 Incluir datos de Pago Móvil</div>
+              <div className={`pm-switch ${incluirPago ? "on" : ""}`} />
+            </div>
+
+            {incluirPago && (
+              <div className="pm-form">
+                <div className="pm-field">
+                  <label className="pm-field-label">BANCO</label>
+                  <input
+                    className="pm-input"
+                    type="text"
+                    placeholder="Ej: Banesco · Mercantil · BNC"
+                    value={pagoMovil.banco}
+                    onChange={e => updatePago("banco", e.target.value)}
+                  />
+                </div>
+                <div className="pm-field">
+                  <label className="pm-field-label">TELÉFONO</label>
+                  <input
+                    className="pm-input"
+                    type="tel"
+                    inputMode="tel"
+                    placeholder="Ej: 0412-000.00.00"
+                    value={pagoMovil.telefono}
+                    onChange={e => updatePago("telefono", e.target.value)}
+                  />
+                </div>
+                <div className="pm-field">
+                  <label className="pm-field-label">CÉDULA / RIF</label>
+                  <input
+                    className="pm-input"
+                    type="text"
+                    placeholder="Ej: V-00.000.000"
+                    value={pagoMovil.cedula}
+                    onChange={e => updatePago("cedula", e.target.value)}
+                  />
+                </div>
+                <div className="pm-field">
+                  <label className="pm-field-label">TITULAR</label>
+                  <input
+                    className="pm-input"
+                    type="text"
+                    placeholder="Nombre del titular de la cuenta"
+                    value={pagoMovil.titular}
+                    onChange={e => updatePago("titular", e.target.value)}
+                  />
+                </div>
+              </div>
+            )}
+
+            <button className="pm-send-btn" onClick={confirmWaCotizacion}>
+              <span style={{ fontSize: 18 }}>💬</span>
+              Enviar por WhatsApp
+            </button>
+            <button className="modal-close" onClick={() => setModal(null)}>Cancelar</button>
+          </div>
+        </div>
+      )}
 
       {/* ── MODAL: COMPARTIR ── */}
       {modal === "share" && (
