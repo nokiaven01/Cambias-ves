@@ -531,28 +531,30 @@ async function fetchRates() {
     } catch (_) {}
   }
 
-  // 5. USDT via Binance P2P promedio
+  // 5. USDT via Criptoya (Binance P2P) — precio minuto a minuto
+  //    GET https://criptoya.com/api/binancep2p/USDT/VES/1
+  //    Respuesta: { ask, totalAsk, bid, totalBid, time }
   try {
-    const res = await fetch("https://p2p.binance.com/bapi/c2c/v2/friendly/c2c/adv/search", {
-      method: "POST", headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ asset: "USDT", fiat: "VES", merchantCheck: false, page: 1, rows: 10, tradeType: "SELL" }),
+    const res = await fetch("https://criptoya.com/api/binancep2p/USDT/VES/1", {
+      cache: "no-cache",
       signal: AbortSignal.timeout(6000),
     });
     const data = await res.json();
-    const prices = data?.data?.map(d => parseFloat(d.adv?.price)).filter(Boolean);
-    if (prices?.length) { results.usdt = prices.reduce((a,b)=>a+b,0)/prices.length; fromApi = true; }
+    const price = parseFloat(data?.ask ?? data?.totalAsk ?? data?.bid);
+    if (price && price > 100) { results.usdt = price; fromApi = true; }
   } catch (_) {}
 
-  // 5b. USDC via Binance P2P promedio diario
+  // 5b. USDC via Criptoya (Bybit P2P) — precio minuto a minuto
+  //    GET https://criptoya.com/api/bybitp2p/USDC/VES/1
+  //    Respuesta: { ask, totalAsk, bid, totalBid, time }
   try {
-    const res = await fetch("https://p2p.binance.com/bapi/c2c/v2/friendly/c2c/adv/search", {
-      method: "POST", headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ asset: "USDC", fiat: "VES", merchantCheck: false, page: 1, rows: 10, tradeType: "SELL" }),
+    const res = await fetch("https://criptoya.com/api/bybitp2p/USDC/VES/1", {
+      cache: "no-cache",
       signal: AbortSignal.timeout(6000),
     });
     const data = await res.json();
-    const prices = data?.data?.map(d => parseFloat(d.adv?.price)).filter(Boolean);
-    if (prices?.length) { results.usdc = prices.reduce((a,b)=>a+b,0)/prices.length; fromApi = true; }
+    const price = parseFloat(data?.ask ?? data?.totalAsk ?? data?.bid);
+    if (price && price > 100) { results.usdc = price; fromApi = true; }
   } catch (_) {}
 
   // 6. Intervencion Digital - tasa fija mensual BCV
@@ -634,12 +636,7 @@ function qrUrl(text) {
 /* Build WhatsApp cotización message */
 function buildWaQuote(rates, amount, calcMode, conv, today, pagoMovil, tasaPago) {
   const num = parseFloat(amount) || 0;
-  let msg = `🇻🇪 *Cotizaciones BCV - ${today}*\n\n`;
-  msg += `🏦 Dólar BCV:         *${fmt(rates.bcv)} Bs/USD*\n`;
-  msg += `💶 Euro BCV:          *${fmt(rates.euro)} Bs/EUR*\n`;
-  msg += `₮  USDT:             *${fmt(rates.usdt)} Bs/USDT*\n`;
-  msg += `Ⓒ  USDC:             *${fmt(rates.usdc)} Bs/USDC*\n`;
-  msg += `📱 Intervención Dig: *${fmt(rates.intervencion)} Bs/USD*\n`;
+  let msg = `🇻🇪 *Cotizaciones BCV - ${today}*\n`;
   if (num > 0) {
     const fromLabel = calcMode === "bs" ? `${fmt(num)} Bs` : `${fmtConv(num)} USD`;
     msg += `\n💱 *Conversión de ${fromLabel}:*\n`;
