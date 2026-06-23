@@ -558,7 +558,7 @@ async function fetchRates() {
   } catch (_) {}
 
   // 6. Intervencion Digital - tasa fija mensual BCV
-  results.intervencion = 615.52;
+  results.intervencion = 623.81;
   results._fromApi = fromApi;
   return results;
 }
