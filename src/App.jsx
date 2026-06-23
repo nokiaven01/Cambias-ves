@@ -9,7 +9,7 @@ const FALLBACK_RATES = {
   euro: 698.22,         // Euro BCV oficial — 18/06/2026 (bcv.today)
   usdt: 780.00,
   usdc: 778.00,         // USDC Binance P2P — promedio diario
-  intervencion: 615.52,
+  intervencion: 623.81,
 };
 
 /* ─── ESTILOS ─────────────────────────────────────────────────────────── */
