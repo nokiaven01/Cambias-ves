@@ -487,18 +487,35 @@ async function fetchRates() {
   const results = { ...FALLBACK_RATES };
   let fromApi = false;
 
-  // 1. FUENTE PRINCIPAL: bcv.today/api/v1/rate.json
-  //    JSON estático sin API key, CORS abierto, devuelve USD + EUR en un solo request.
-  //    Formato: { USD: 602.33, EUR: 698.22, updated_at, effective_date, date }
+  // 0. FUENTE OFICIAL PROPIA: /api/bcv (función serverless de Vercel que scrapea el
+  //    BCV directamente, mismo origen, sin CORS ni dependencia de terceros).
+  //    Respuesta: { ok, usd:{valor}, eur:{valor}, fecha_valor, ... }
   try {
-    const res = await fetch("https://bcv.today/api/v1/rate.json", {
+    const res = await fetch("/api/bcv", {
       cache: "no-cache",
       signal: AbortSignal.timeout(7000),
     });
     const data = await res.json();
-    if (data?.USD && data.USD > 100) { results.bcv  = data.USD; fromApi = true; }
-    if (data?.EUR && data.EUR > 100) { results.euro = data.EUR; fromApi = true; }
+    if (data?.ok) {
+      if (data.usd?.valor > 100) { results.bcv  = data.usd.valor; fromApi = true; }
+      if (data.eur?.valor > 100) { results.euro = data.eur.valor; fromApi = true; }
+    }
   } catch (_) {}
+
+  // 1. FALLBACK USD+EUR: bcv.today/api/v1/rate.json
+  //    JSON estático sin API key, CORS abierto, devuelve USD + EUR en un solo request.
+  //    Formato: { USD: 602.33, EUR: 698.22, updated_at, effective_date, date }
+  if (!fromApi) {
+    try {
+      const res = await fetch("https://bcv.today/api/v1/rate.json", {
+        cache: "no-cache",
+        signal: AbortSignal.timeout(7000),
+      });
+      const data = await res.json();
+      if (data?.USD && data.USD > 100) { results.bcv  = data.USD; fromApi = true; }
+      if (data?.EUR && data.EUR > 100) { results.euro = data.EUR; fromApi = true; }
+    } catch (_) {}
+  }
 
   // 2. FALLBACK USD+EUR: jsDelivr CDN (espejo del mismo repo de bcv.today)
   if (!fromApi) {
