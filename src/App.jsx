@@ -9,7 +9,6 @@ const FALLBACK_RATES = {
   euro: 698.22,         // Euro BCV oficial — 18/06/2026 (bcv.today)
   usdt: 780.00,
   usdc: 778.00,         // USDC Binance P2P — promedio diario
-  intervencion: 623.81,
 };
 
 /* ─── ESTILOS ─────────────────────────────────────────────────────────── */
@@ -103,7 +102,6 @@ const styles = `
   .rate-card.euro::before         { background:linear-gradient(to bottom,#8b5cf6,#6d28d9); }
   .rate-card.usdt::before         { background:linear-gradient(to bottom,#10b981,#059669); }
   .rate-card.usdc::before         { background:linear-gradient(to bottom,#06b6d4,#0891b2); }
-  .rate-card.intervencion::before { background:linear-gradient(to bottom,#f59e0b,#d97706); }
   .rate-card:active { transform:scale(0.98); background:rgba(255,255,255,0.05); }
   .rate-left { display:flex; align-items:center; gap:12px; }
   .rate-icon { width:40px; height:40px; border-radius:12px; display:flex; align-items:center; justify-content:center; font-size:18px; flex-shrink:0; }
@@ -111,7 +109,6 @@ const styles = `
   .rate-icon.euro         { background:rgba(139,92,246,0.15); }
   .rate-icon.usdt         { background:rgba(16,185,129,0.15); }
   .rate-icon.usdc         { background:rgba(6,182,212,0.15); }
-  .rate-icon.intervencion { background:rgba(245,158,11,0.15); }
   .rate-name { font-size:14px; font-weight:700; color:#f1f5f9; line-height:1.2; }
   .rate-subtitle { font-size:11px; color:#64748b; margin-top:1px; }
   .rate-value { text-align:right; }
@@ -148,7 +145,6 @@ const styles = `
   .result-card.euro::after         { background:linear-gradient(to right,#8b5cf6,#6d28d9); }
   .result-card.usdt::after         { background:linear-gradient(to right,#10b981,#059669); }
   .result-card.usdc::after         { background:linear-gradient(to right,#06b6d4,#0891b2); }
-  .result-card.intervencion::after { background:linear-gradient(to right,#f59e0b,#d97706); }
   .result-label { font-size:10px; font-weight:700; letter-spacing:1px; text-transform:uppercase; color:#64748b; margin-bottom:6px; }
   .result-value { font-family:'JetBrains Mono',monospace; font-size:15px; font-weight:600; color:#f1f5f9; word-break:break-all; }
   .result-value.empty { color:#334155; }
@@ -574,8 +570,6 @@ async function fetchRates() {
     if (price && price > 100) { results.usdc = price; fromApi = true; }
   } catch (_) {}
 
-  // 6. Intervencion Digital - tasa fija mensual BCV
-  results.intervencion = 623.81;
   results._fromApi = fromApi;
   return results;
 }
@@ -662,24 +656,22 @@ function buildWaQuote(rates, amount, calcMode, conv, today, pagoMovil, tasaPago)
       if (conv.euro != null)         msg += `  → EUR BCV:     *${fmtConv(conv.euro)} €*\n`;
       if (conv.usdt != null)         msg += `  → USDT:        *${fmtConv(conv.usdt)} ₮*\n`;
       if (conv.usdc != null)         msg += `  → USDC:        *${fmtConv(conv.usdc)} Ⓒ*\n`;
-      if (conv.intervencion != null) msg += `  → USD Digital: *${fmtConv(conv.intervencion)} $*\n`;
     } else {
       if (conv.bcv != null)          msg += `  → Bs (BCV):     *${fmtConv(conv.bcv)} Bs*\n`;
       if (conv.euro != null)         msg += `  → Bs (Euro):    *${fmtConv(conv.euro)} Bs*\n`;
       if (conv.usdt != null)         msg += `  → Bs (USDT):    *${fmtConv(conv.usdt)} Bs*\n`;
       if (conv.usdc != null)         msg += `  → Bs (USDC):    *${fmtConv(conv.usdc)} Bs*\n`;
-      if (conv.intervencion != null) msg += `  → Bs (Digital): *${fmtConv(conv.intervencion)} Bs*\n`;
     }
   }
   // Tasa elegida para realizar el pago
   if (tasaPago && rates[tasaPago] != null) {
     const TASA_LABELS = {
       bcv: "Dólar BCV", euro: "Euro BCV", usdt: "USDT",
-      usdc: "USDC", intervencion: "Intervención Digital",
+      usdc: "USDC",
     };
     const TASA_UNIT = {
       bcv: "Bs/USD", euro: "Bs/EUR", usdt: "Bs/USDT",
-      usdc: "Bs/USDC", intervencion: "Bs/USD",
+      usdc: "Bs/USDC",
     };
     msg += `\n💲 *El pago debe realizarse a la tasa ${TASA_LABELS[tasaPago]}: ${fmt(rates[tasaPago])} ${TASA_UNIT[tasaPago]}*\n`;
   }
@@ -796,7 +788,6 @@ export default function App() {
     euro:         inputNum && rates.euro         ? (calcMode==="bs" ? inputNum/rates.euro         : inputNum*rates.euro)         : null,
     usdt:         inputNum && rates.usdt         ? (calcMode==="bs" ? inputNum/rates.usdt         : inputNum*rates.usdt)         : null,
     usdc:         inputNum && rates.usdc         ? (calcMode==="bs" ? inputNum/rates.usdc         : inputNum*rates.usdc)         : null,
-    intervencion: inputNum && rates.intervencion ? (calcMode==="bs" ? inputNum/rates.intervencion : inputNum*rates.intervencion) : null,
   };
 
   // Result labels & currencies change with mode
@@ -805,12 +796,10 @@ export default function App() {
     euro:         { label: calcMode==="bs" ? "EUR BCV"     : "Bs · Euro",    currency: calcMode==="bs" ? "Euros" : "Bs." },
     usdt:         { label: calcMode==="bs" ? "USDT"        : "Bs · USDT",    currency: calcMode==="bs" ? "USDT"  : "Bs." },
     usdc:         { label: calcMode==="bs" ? "USDC"        : "Bs · USDC",    currency: calcMode==="bs" ? "USDC"  : "Bs." },
-    intervencion: { label: calcMode==="bs" ? "USD Digital" : "Bs · Digital", currency: calcMode==="bs" ? "USD"   : "Bs." },
   };
 
   // Precios de gasolina Venezuela 2026 (Bs/litro usando tasa BCV)
   const FUEL = [
-    { id:"subsidiada", label:"Subsidiada 91 oct", priceUSD: 0.024,  priceBs: null,  tag:"Cupo Patria · ~120 L/mes" },
     { id:"internacional", label:"Internacional",  priceUSD: 0.50,   priceBs: null,  tag:"Sin límite · Biopago/divisas" },
     { id:"premium",    label:"Super Premium 97",  priceUSD: 1.00,   priceBs: null,  tag:"Solo efectivo USD" },
   ].map(f => ({
@@ -832,7 +821,6 @@ export default function App() {
     { id:"euro",         icon:"💶", name:"Euro BCV",             subtitle:"Cotización oficial EUR",     value:rates.euro,         unit:"Bs/EUR",  src:"bcv.today"    },
     { id:"usdt",         icon:"₮",  name:"USDT",                 subtitle:"Binance P2P · Promedio",     value:rates.usdt,         unit:"Bs/USDT", src:"Binance P2P"   },
     { id:"usdc",         icon:"Ⓒ", name:"USDC",                 subtitle:"Binance P2P · Promedio",     value:rates.usdc,         unit:"Bs/USDC", src:"Binance P2P"   },
-    { id:"intervencion", icon:"📱", name:"Intervención Digital", subtitle:"Tasa BCV venta $ Digital",   value:rates.intervencion, unit:"Bs/USD",  src:"BCV Mensual"   },
   ];
 
   /* ── Share actions ── */
@@ -1037,7 +1025,7 @@ export default function App() {
               </div>
             </div>
 
-            {/* Resto de tarjetas: Euro, USDT, Intervención */}
+            {/* Resto de tarjetas: Euro, USDT, USDC */}
             {rateCards.filter(c => c.id !== "bcv").map(card => (
               <div key={card.id} className={`result-card ${card.id}`}>
                 <div className="result-label">{resultMeta[card.id].label}</div>
