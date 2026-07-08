@@ -8,8 +8,36 @@ const FALLBACK_RATES = {
   bcv: 602.33,          // BCV oficial USD — 18/06/2026 (bcv.today)
   euro: 698.22,         // Euro BCV oficial — 18/06/2026 (bcv.today)
   usdt: 780.00,
-  usdc: 778.00,         // USDC Binance P2P — promedio diario
 };
+
+/* ─── BANCOS NACIONALES DE VENEZUELA (código IBP · nombre) ─────────────── */
+const BANCOS_VE = [
+  { code: "0102", name: "Banco de Venezuela" },
+  { code: "0104", name: "Banco Venezolano de Crédito" },
+  { code: "0105", name: "Banco Mercantil" },
+  { code: "0108", name: "Banco Provincial (BBVA)" },
+  { code: "0114", name: "Bancaribe" },
+  { code: "0115", name: "Banco Exterior" },
+  { code: "0128", name: "Banco Caroní" },
+  { code: "0134", name: "Banesco" },
+  { code: "0137", name: "Banco Sofitasa" },
+  { code: "0138", name: "Banco Plaza" },
+  { code: "0146", name: "Bangente" },
+  { code: "0151", name: "BFC Banco Fondo Común" },
+  { code: "0156", name: "100% Banco" },
+  { code: "0157", name: "DelSur Banco Universal" },
+  { code: "0163", name: "Banco del Tesoro" },
+  { code: "0166", name: "Banco Agrícola de Venezuela" },
+  { code: "0168", name: "Bancrecer" },
+  { code: "0169", name: "Mi Banco" },
+  { code: "0171", name: "Banco Activo" },
+  { code: "0172", name: "Bancamiga" },
+  { code: "0173", name: "Banco Internacional de Desarrollo" },
+  { code: "0174", name: "Banplus" },
+  { code: "0175", name: "Banco Bicentenario del Pueblo" },
+  { code: "0177", name: "Banco de la FANB (Banfanb)" },
+  { code: "0191", name: "Banco Nacional de Crédito (BNC)" },
+];
 
 /* ─── ESTILOS ─────────────────────────────────────────────────────────── */
 const styles = `
@@ -101,14 +129,12 @@ const styles = `
   .rate-card.bcv::before          { background:linear-gradient(to bottom,#3b82f6,#1d4ed8); }
   .rate-card.euro::before         { background:linear-gradient(to bottom,#8b5cf6,#6d28d9); }
   .rate-card.usdt::before         { background:linear-gradient(to bottom,#10b981,#059669); }
-  .rate-card.usdc::before         { background:linear-gradient(to bottom,#06b6d4,#0891b2); }
   .rate-card:active { transform:scale(0.98); background:rgba(255,255,255,0.05); }
   .rate-left { display:flex; align-items:center; gap:12px; }
   .rate-icon { width:40px; height:40px; border-radius:12px; display:flex; align-items:center; justify-content:center; font-size:18px; flex-shrink:0; }
   .rate-icon.bcv          { background:rgba(59,130,246,0.15); }
   .rate-icon.euro         { background:rgba(139,92,246,0.15); }
   .rate-icon.usdt         { background:rgba(16,185,129,0.15); }
-  .rate-icon.usdc         { background:rgba(6,182,212,0.15); }
   .rate-name { font-size:14px; font-weight:700; color:#f1f5f9; line-height:1.2; }
   .rate-subtitle { font-size:11px; color:#64748b; margin-top:1px; }
   .rate-value { text-align:right; }
@@ -144,7 +170,6 @@ const styles = `
   .result-card.bcv::after          { background:linear-gradient(to right,#3b82f6,#1d4ed8); }
   .result-card.euro::after         { background:linear-gradient(to right,#8b5cf6,#6d28d9); }
   .result-card.usdt::after         { background:linear-gradient(to right,#10b981,#059669); }
-  .result-card.usdc::after         { background:linear-gradient(to right,#06b6d4,#0891b2); }
   .result-label { font-size:10px; font-weight:700; letter-spacing:1px; text-transform:uppercase; color:#64748b; margin-bottom:6px; }
   .result-value { font-family:'JetBrains Mono',monospace; font-size:15px; font-weight:600; color:#f1f5f9; word-break:break-all; }
   .result-value.empty { color:#334155; }
@@ -293,6 +318,40 @@ const styles = `
   }
   .pm-input:focus { border-color:rgba(234,179,8,0.4); background:rgba(234,179,8,0.04); }
   .pm-input::placeholder { color:#475569; font-weight:400; }
+
+  /* SELECTOR DE BANCO (desplegable) */
+  .pm-bank-select { position:relative; }
+  .pm-bank-trigger {
+    width:100%; display:flex; align-items:center; justify-content:space-between; gap:10px;
+    background:rgba(255,255,255,0.04); border:1px solid rgba(255,255,255,0.1);
+    border-radius:10px; padding:11px 13px; cursor:pointer; user-select:none;
+    font-family:'Exo 2',sans-serif; transition:all .15s; text-align:left;
+  }
+  .pm-bank-trigger:active { transform:scale(0.99); }
+  .pm-bank-trigger.open { border-color:rgba(234,179,8,0.4); background:rgba(234,179,8,0.04); }
+  .pm-bank-current { font-size:14px; font-weight:600; color:#f1f5f9; }
+  .pm-bank-placeholder { font-size:14px; font-weight:400; color:#475569; }
+  .pm-bank-arrow { color:#94a3b8; font-size:11px; transition:transform .2s; flex-shrink:0; }
+  .pm-bank-arrow.open { transform:rotate(180deg); }
+  .pm-bank-list {
+    margin-top:8px; max-height:230px; overflow-y:auto;
+    background:rgba(15,20,32,0.98); border:1px solid rgba(255,255,255,0.12);
+    border-radius:12px; padding:5px; display:flex; flex-direction:column; gap:2px;
+    box-shadow:0 12px 30px rgba(0,0,0,0.45);
+  }
+  .pm-bank-list::-webkit-scrollbar { width:6px; }
+  .pm-bank-list::-webkit-scrollbar-thumb { background:rgba(255,255,255,0.15); border-radius:6px; }
+  .pm-bank-item {
+    display:flex; align-items:center; gap:10px; padding:9px 10px;
+    border-radius:9px; cursor:pointer; transition:background .12s;
+  }
+  .pm-bank-item:active { background:rgba(255,255,255,0.06); }
+  .pm-bank-item.sel { background:rgba(234,179,8,0.14); }
+  .pm-bank-code {
+    font-family:'JetBrains Mono',monospace; font-size:12px; font-weight:600; color:#eab308;
+    background:rgba(234,179,8,0.1); border-radius:6px; padding:3px 7px; flex-shrink:0; min-width:44px; text-align:center;
+  }
+  .pm-bank-name { font-size:13px; font-weight:600; color:#e2e8f0; line-height:1.25; }
   .pm-send-btn {
     display:flex; align-items:center; justify-content:center; gap:8px;
     width:100%; margin-top:8px; padding:14px;
@@ -557,19 +616,6 @@ async function fetchRates() {
     if (price && price > 100) { results.usdt = price; fromApi = true; }
   } catch (_) {}
 
-  // 5b. USDC via Criptoya (Bybit P2P) — precio minuto a minuto
-  //    GET https://criptoya.com/api/bybitp2p/USDC/VES/1
-  //    Respuesta: { ask, totalAsk, bid, totalBid, time }
-  try {
-    const res = await fetch("https://criptoya.com/api/bybitp2p/USDC/VES/1", {
-      cache: "no-cache",
-      signal: AbortSignal.timeout(6000),
-    });
-    const data = await res.json();
-    const price = parseFloat(data?.ask ?? data?.totalAsk ?? data?.bid);
-    if (price && price > 100) { results.usdc = price; fromApi = true; }
-  } catch (_) {}
-
   results._fromApi = fromApi;
   return results;
 }
@@ -655,23 +701,19 @@ function buildWaQuote(rates, amount, calcMode, conv, today, pagoMovil, tasaPago)
       if (conv.bcv != null)          msg += `  → USD BCV:     *${fmtConv(conv.bcv)} $*\n`;
       if (conv.euro != null)         msg += `  → EUR BCV:     *${fmtConv(conv.euro)} €*\n`;
       if (conv.usdt != null)         msg += `  → USDT:        *${fmtConv(conv.usdt)} ₮*\n`;
-      if (conv.usdc != null)         msg += `  → USDC:        *${fmtConv(conv.usdc)} Ⓒ*\n`;
     } else {
       if (conv.bcv != null)          msg += `  → Bs (BCV):     *${fmtConv(conv.bcv)} Bs*\n`;
       if (conv.euro != null)         msg += `  → Bs (Euro):    *${fmtConv(conv.euro)} Bs*\n`;
       if (conv.usdt != null)         msg += `  → Bs (USDT):    *${fmtConv(conv.usdt)} Bs*\n`;
-      if (conv.usdc != null)         msg += `  → Bs (USDC):    *${fmtConv(conv.usdc)} Bs*\n`;
     }
   }
   // Tasa elegida para realizar el pago
   if (tasaPago && rates[tasaPago] != null) {
     const TASA_LABELS = {
       bcv: "Dólar BCV", euro: "Euro BCV", usdt: "USDT",
-      usdc: "USDC",
     };
     const TASA_UNIT = {
       bcv: "Bs/USD", euro: "Bs/EUR", usdt: "Bs/USDT",
-      usdc: "Bs/USDC",
     };
     msg += `\n💲 *El pago debe realizarse a la tasa ${TASA_LABELS[tasaPago]}: ${fmt(rates[tasaPago])} ${TASA_UNIT[tasaPago]}*\n`;
   }
@@ -709,6 +751,7 @@ export default function App() {
   /* Datos de Pago Móvil del usuario (se guardan localmente para no reescribirlos) */
   const PM_KEY = "vzla_pago_movil_v1";
   const [incluirPago, setIncluirPago] = useState(true);
+  const [bancoOpen, setBancoOpen] = useState(false); // desplegable de bancos
   const [tasaPago, setTasaPago] = useState("bcv"); // tasa elegida para el pago
   const [pagoMovil, setPagoMovil] = useState(() => {
     try {
@@ -787,7 +830,6 @@ export default function App() {
     bcv:          inputNum && rates.bcv          ? (calcMode==="bs" ? inputNum/rates.bcv          : inputNum*rates.bcv)          : null,
     euro:         inputNum && rates.euro         ? (calcMode==="bs" ? inputNum/rates.euro         : inputNum*rates.euro)         : null,
     usdt:         inputNum && rates.usdt         ? (calcMode==="bs" ? inputNum/rates.usdt         : inputNum*rates.usdt)         : null,
-    usdc:         inputNum && rates.usdc         ? (calcMode==="bs" ? inputNum/rates.usdc         : inputNum*rates.usdc)         : null,
   };
 
   // Result labels & currencies change with mode
@@ -795,7 +837,6 @@ export default function App() {
     bcv:          { label: calcMode==="bs" ? "USD BCV"     : "Bs · BCV",     currency: calcMode==="bs" ? "USD"   : "Bs." },
     euro:         { label: calcMode==="bs" ? "EUR BCV"     : "Bs · Euro",    currency: calcMode==="bs" ? "Euros" : "Bs." },
     usdt:         { label: calcMode==="bs" ? "USDT"        : "Bs · USDT",    currency: calcMode==="bs" ? "USDT"  : "Bs." },
-    usdc:         { label: calcMode==="bs" ? "USDC"        : "Bs · USDC",    currency: calcMode==="bs" ? "USDC"  : "Bs." },
   };
 
   // Precios de gasolina Venezuela 2026 (Bs/litro usando tasa BCV)
@@ -820,7 +861,6 @@ export default function App() {
     { id:"bcv",          icon:"🏦", name:"Dólar BCV",           subtitle:"Banco Central de Venezuela", value:rates.bcv,          unit:"Bs/USD",  src:"bcv.today"    },
     { id:"euro",         icon:"💶", name:"Euro BCV",             subtitle:"Cotización oficial EUR",     value:rates.euro,         unit:"Bs/EUR",  src:"bcv.today"    },
     { id:"usdt",         icon:"₮",  name:"USDT",                 subtitle:"Binance P2P · Promedio",     value:rates.usdt,         unit:"Bs/USDT", src:"Binance P2P"   },
-    { id:"usdc",         icon:"Ⓒ", name:"USDC",                 subtitle:"Binance P2P · Promedio",     value:rates.usdc,         unit:"Bs/USDC", src:"Binance P2P"   },
   ];
 
   /* ── Share actions ── */
@@ -1025,7 +1065,7 @@ export default function App() {
               </div>
             </div>
 
-            {/* Resto de tarjetas: Euro, USDT, USDC */}
+            {/* Resto de tarjetas: Euro, USDT */}
             {rateCards.filter(c => c.id !== "bcv").map(card => (
               <div key={card.id} className={`result-card ${card.id}`}>
                 <div className="result-label">{resultMeta[card.id].label}</div>
@@ -1156,7 +1196,7 @@ export default function App() {
             Sincronización vía API.<br/>
             Las cotizaciones del BCV son las oficiales vigentes para:{" "}
             <span className="highlight">{today}</span>.<br/>
-            Se utiliza la API de Binance para obtener el promedio diario de USDT y USDC.
+            Se utiliza la API de Binance para obtener el promedio diario de USDT.
           </div>
         </div>
       </div>
@@ -1201,13 +1241,35 @@ export default function App() {
               <div className="pm-form">
                 <div className="pm-field">
                   <label className="pm-field-label">BANCO</label>
-                  <input
-                    className="pm-input"
-                    type="text"
-                    placeholder="Ej: Banesco · Mercantil · BNC"
-                    value={pagoMovil.banco}
-                    onChange={e => updatePago("banco", e.target.value)}
-                  />
+                  <div className="pm-bank-select">
+                    <button
+                      type="button"
+                      className={`pm-bank-trigger ${bancoOpen ? "open" : ""}`}
+                      onClick={() => setBancoOpen(v => !v)}
+                    >
+                      {pagoMovil.banco
+                        ? <span className="pm-bank-current">{pagoMovil.banco}</span>
+                        : <span className="pm-bank-placeholder">Selecciona tu banco</span>}
+                      <span className={`pm-bank-arrow ${bancoOpen ? "open" : ""}`}>▼</span>
+                    </button>
+                    {bancoOpen && (
+                      <div className="pm-bank-list">
+                        {BANCOS_VE.map(b => {
+                          const label = `${b.name} (${b.code})`;
+                          return (
+                            <div
+                              key={b.code}
+                              className={`pm-bank-item ${pagoMovil.banco === label ? "sel" : ""}`}
+                              onClick={() => { updatePago("banco", label); setBancoOpen(false); }}
+                            >
+                              <span className="pm-bank-code">{b.code}</span>
+                              <span className="pm-bank-name">{b.name}</span>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    )}
+                  </div>
                 </div>
                 <div className="pm-field">
                   <label className="pm-field-label">TELÉFONO</label>
