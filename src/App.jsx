@@ -506,20 +506,42 @@ const styles = `
   }
   .donate-thanks span { color: #ec4899; }
 
-  /* DONATE TOGGLE BUTTON */
+  /* DONATE TOGGLE BUTTON — anuncio importante con colores animados */
+  @keyframes donateGradient {
+    0%   { background-position: 0% 50%; }
+    50%  { background-position: 100% 50%; }
+    100% { background-position: 0% 50%; }
+  }
+  @keyframes donateGlow {
+    0%, 100% { box-shadow: 0 0 10px rgba(249,115,22,0.55), 0 0 22px rgba(236,72,153,0.35); }
+    50%      { box-shadow: 0 0 20px rgba(139,92,246,0.7), 0 0 34px rgba(59,130,246,0.45); }
+  }
+  @keyframes donatePulse {
+    0%, 100% { transform: scale(1); }
+    50%      { transform: scale(1.015); }
+  }
   .donate-toggle-btn {
     display: flex; align-items: center; justify-content: space-between;
-    width: calc(100% - 32px); margin: 12px 16px 0;
-    padding: 12px 16px;
-    background: rgba(234,179,8,0.08); border: 1px solid rgba(234,179,8,0.2);
-    border-radius: 14px; color: #eab308; font-family: 'Exo 2', sans-serif;
-    font-size: 13px; font-weight: 700; cursor: pointer; transition: all .18s;
-    user-select: none; position: relative; z-index: 1;
+    width: calc(100% - 32px); margin: 16px 16px 4px;
+    padding: 14px 16px;
+    background: linear-gradient(90deg, #f97316, #eab308, #ec4899, #8b5cf6, #3b82f6, #10b981, #f97316);
+    background-size: 300% 300%;
+    border: 1.5px solid rgba(255,255,255,0.35);
+    border-radius: 14px; color: #fff; font-family: 'Exo 2', sans-serif;
+    font-size: 14px; font-weight: 800; letter-spacing: 0.3px; cursor: pointer;
+    text-shadow: 0 1px 3px rgba(0,0,0,0.45);
+    user-select: none; position: relative; z-index: 1; overflow: hidden;
+    animation: donateGradient 6s ease infinite, donateGlow 3s ease-in-out infinite, donatePulse 2.5s ease-in-out infinite;
   }
-  .donate-toggle-btn:active { background: rgba(234,179,8,0.14); transform: scale(0.98); }
+  .donate-toggle-btn:active { transform: scale(0.98); }
   .donate-toggle-btn-left { display: flex; align-items: center; gap: 8px; }
+  .donate-toggle-btn-left::before {
+    content: '★ IMPORTANTE'; font-size: 8px; font-weight: 900; letter-spacing: 1px;
+    background: rgba(0,0,0,0.28); color: #fff; padding: 2px 6px; border-radius: 6px;
+    margin-right: 2px; white-space: nowrap;
+  }
   .donate-chevron {
-    font-size: 14px; transition: transform .25s ease; display: inline-block; color: #ca8a04;
+    font-size: 14px; transition: transform .25s ease; display: inline-block; color: #fff;
   }
   .donate-chevron.open { transform: rotate(180deg); }
 
@@ -1035,7 +1057,18 @@ export default function App() {
           {/* Results grid — BCV slot replaced by fuel calculator */}
           <div className="results-grid">
 
-            {/* ⛽ CALCULADORA DE GASOLINA — ocupa el espacio de USD BCV */}
+            {/* Tarjetas de conversión: Euro BCV, USDT (primero) */}
+            {rateCards.filter(c => c.id !== "bcv").map(card => (
+              <div key={card.id} className={`result-card ${card.id}`}>
+                <div className="result-label">{resultMeta[card.id].label}</div>
+                <div className={`result-value ${conv[card.id]==null?"empty":""}`}>
+                  {conv[card.id]!=null ? fmtConv(conv[card.id]) : "—"}
+                </div>
+                <div className="result-currency">{resultMeta[card.id].currency}</div>
+              </div>
+            ))}
+
+            {/* ⛽ CALCULADORA DE GASOLINA — ubicada debajo de EURO BCV y USDT */}
             <div className="fuel-card">
               <div className="fuel-header">
                 <div className="fuel-icon">⛽</div>
@@ -1064,23 +1097,12 @@ export default function App() {
                 })}
               </div>
             </div>
-
-            {/* Resto de tarjetas: Euro, USDT */}
-            {rateCards.filter(c => c.id !== "bcv").map(card => (
-              <div key={card.id} className={`result-card ${card.id}`}>
-                <div className="result-label">{resultMeta[card.id].label}</div>
-                <div className={`result-value ${conv[card.id]==null?"empty":""}`}>
-                  {conv[card.id]!=null ? fmtConv(conv[card.id]) : "—"}
-                </div>
-                <div className="result-currency">{resultMeta[card.id].currency}</div>
-              </div>
-            ))}
           </div>
 
-          {/* Enviar cotización vía WhatsApp */}
+          {/* Pago/Cotización vía WhatsApp */}
           <button className="wa-send-btn" onClick={sendWaCotizacion}>
             <span style={{fontSize:18}}>💬</span>
-            Enviar cotización por WhatsApp
+            Pago/Cotización vía Whatsapp
           </button>
         </div>
 
@@ -1206,7 +1228,7 @@ export default function App() {
         <div className="modal-overlay" onClick={() => setModal(null)}>
           <div className="modal-sheet" onClick={e => e.stopPropagation()}>
             <div className="modal-handle" />
-            <div className="modal-title">Enviar cotización por WhatsApp</div>
+            <div className="modal-title">Pago/Cotización vía Whatsapp</div>
             <div className="pm-intro">
               Elige la tasa para el pago y agrega tus datos de Pago Móvil.
               Todo se incluirá en el mensaje.
