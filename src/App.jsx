@@ -230,6 +230,21 @@ const styles = `
   .fuel-row-unit { font-size: 9px; color: #64748b; margin-top: 1px; text-align: right; }
   .fuel-empty { color: #334155; }
 
+  /* Litros deseados → costo en Bs y USD */
+  .fuel-litros-block { margin-top: 12px; padding-top: 10px; border-top: 1px dashed rgba(255,255,255,0.08); }
+  .fuel-litros-label { font-size: 10px; font-weight: 700; letter-spacing: 0.5px; text-transform: uppercase; color: #94a3b8; margin-bottom: 6px; }
+  .fuel-input-wrapper {
+    display: flex; align-items: center; gap: 8px;
+    background: rgba(249,115,22,0.06); border: 1px solid rgba(249,115,22,0.25);
+    border-radius: 10px; padding: 8px 12px; transition: border-color .2s;
+  }
+  .fuel-input-wrapper:focus-within { border-color: rgba(249,115,22,0.5); background: rgba(249,115,22,0.1); }
+  .fuel-litros-input { flex: 1; background: none; border: none; outline: none; color: #f1f5f9; font-family: 'JetBrains Mono', monospace; font-size: 16px; font-weight: 700; text-align: right; width: 100%; }
+  .fuel-litros-input::placeholder { color: #334155; }
+  .fuel-litros-unit { font-size: 12px; font-weight: 700; color: #f97316; background: rgba(249,115,22,0.12); border-radius: 6px; padding: 3px 8px; flex-shrink: 0; }
+  .fuel-cost-bs { font-family: 'JetBrains Mono', monospace; font-size: 14px; font-weight: 700; color: #eab308; }
+  .fuel-cost-usd { font-family: 'JetBrains Mono', monospace; font-size: 12px; font-weight: 600; color: #4ade80; margin-top: 1px; }
+
   .currency-toggle {
     display: flex; background: rgba(255,255,255,0.04);
     border: 1px solid rgba(255,255,255,0.08); border-radius: 14px;
@@ -765,6 +780,7 @@ export default function App() {
   const [isOnline, setIsOnline]   = useState(typeof navigator !== "undefined" ? navigator.onLine : true);
   const [calcMode, setCalcMode]   = useState("bs"); // "bs" | "usd"
   const [amount, setAmount]       = useState("");
+  const [litros, setLitros]       = useState(""); // litros deseados para calcular costo
   const [modal, setModal]         = useState(null); // null | 'share' | 'qr' | 'cotizacion'
   const [toast, setToast]         = useState(null);
   const [showDonate, setShowDonate] = useState(false);
@@ -814,6 +830,14 @@ export default function App() {
     if (!soloNumeros) { setAmount(""); return; }
     const numeroFlotante = parseInt(soloNumeros, 10) / 100;
     setAmount(veMontoFmt.format(numeroFlotante));
+  };
+
+  /* Litros deseados: permite dígitos y un separador decimal (coma o punto). */
+  const handleLitrosChange = (e) => {
+    let v = e.target.value.replace(/[^\d.,]/g, "").replace(/,/g, ".");
+    const parts = v.split(".");
+    if (parts.length > 1) v = parts[0] + "." + parts.slice(1).join("");
+    setLitros(v);
   };
 
   /* Load rates with localStorage cache */
@@ -877,6 +901,13 @@ export default function App() {
         return { ...f, liters: montoBs / f.priceBs };
       })
     : null;
+
+  // Costo de los litros deseados por el usuario (en Bs y USD según cada tipo)
+  const litrosNum = parseFloat(litros) || 0;
+  const fuelCosts = litrosNum > 0
+    ? FUEL.map(f => ({ ...f, costBs: litrosNum * f.priceBs, costUSD: litrosNum * f.priceUSD }))
+    : null;
+
   const today = todayStr();
 
   const rateCards = [
@@ -1001,13 +1032,13 @@ export default function App() {
               className={`toggle-btn ${calcMode==="bs" ? "active-bs" : ""}`}
               onClick={() => { setCalcMode("bs"); setAmount(""); }}
             >
-              <span>🇻🇪</span> Bolívares → Dólares
+              <span>🇻🇪</span> Bolívares - Dólares
             </button>
             <button
               className={`toggle-btn ${calcMode==="usd" ? "active-usd" : ""}`}
               onClick={() => { setCalcMode("usd"); setAmount(""); }}
             >
-              <span>💵</span> USD → Bolívares
+              <span>💵</span> Dólares - Bolívares
             </button>
           </div>
 
@@ -1095,6 +1126,43 @@ export default function App() {
                     </div>
                   );
                 })}
+              </div>
+
+              {/* ⛽ Calcular costo por litros deseados → Bs y USD */}
+              <div className="fuel-litros-block">
+                <div className="fuel-litros-label">¿Cuántos litros deseas?</div>
+                <div className="fuel-input-wrapper">
+                  <input
+                    className="fuel-litros-input"
+                    type="text" inputMode="decimal"
+                    placeholder="0"
+                    value={litros}
+                    onChange={handleLitrosChange}
+                  />
+                  <span className="fuel-litros-unit">L</span>
+                </div>
+
+                <div className="fuel-rows" style={{marginTop:8}}>
+                  {FUEL.map(f => {
+                    const cost = fuelCosts?.find(c => c.id === f.id);
+                    return (
+                      <div className="fuel-row" key={`cost-${f.id}`}>
+                        <div className="fuel-row-left">
+                          <div className="fuel-row-type">{f.label}</div>
+                          <div className="fuel-row-price">{fmt(f.priceBs)} Bs/L · ${f.priceUSD.toFixed(3)}/L</div>
+                        </div>
+                        <div style={{textAlign:"right"}}>
+                          <div className={`fuel-cost-bs ${!cost?"fuel-empty":""}`}>
+                            {cost ? `${fmt(cost.costBs)} Bs` : "—"}
+                          </div>
+                          <div className={`fuel-cost-usd ${!cost?"fuel-empty":""}`}>
+                            {cost ? `$${fmtConv(cost.costUSD)}` : "—"}
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
               </div>
             </div>
           </div>
