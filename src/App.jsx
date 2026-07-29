@@ -231,7 +231,7 @@ const styles = `
   .fuel-empty { color: #334155; }
 
   /* Litros deseados → costo en Bs y USD */
-  .fuel-litros-block { margin-top: 12px; padding-top: 10px; border-top: 1px dashed rgba(255,255,255,0.08); }
+  .fuel-litros-block { margin-top: 4px; }
   .fuel-litros-label { font-size: 10px; font-weight: 700; letter-spacing: 0.5px; text-transform: uppercase; color: #94a3b8; margin-bottom: 6px; }
   .fuel-input-wrapper {
     display: flex; align-items: center; gap: 8px;
@@ -895,13 +895,6 @@ export default function App() {
   }));
 
   // Litros que dan según modo y monto
-  const fuelLiters = inputNum > 0
-    ? FUEL.map(f => {
-        const montoBs = calcMode === "bs" ? inputNum : inputNum * (rates.bcv || FALLBACK_RATES.bcv);
-        return { ...f, liters: montoBs / f.priceBs };
-      })
-    : null;
-
   // Costo de los litros deseados por el usuario (en Bs y USD según cada tipo)
   const litrosNum = parseFloat(litros) || 0;
   const fuelCosts = litrosNum > 0
@@ -1104,28 +1097,9 @@ export default function App() {
               <div className="fuel-header">
                 <div className="fuel-icon">⛽</div>
                 <div>
-                  <div className="fuel-title">Gasolina · Litros equivalentes</div>
+                  <div className="fuel-title">Gasolina · Costo por litros</div>
                   <div className="fuel-subtitle">Tasa BCV · Precios PDVSA 2026</div>
                 </div>
-              </div>
-              <div className="fuel-rows">
-                {FUEL.map(f => {
-                  const liters = fuelLiters?.find(l => l.id === f.id)?.liters;
-                  return (
-                    <div className="fuel-row" key={f.id}>
-                      <div className="fuel-row-left">
-                        <div className="fuel-row-type">{f.label}</div>
-                        <div className="fuel-row-price">{fmt(f.priceBs)} Bs/L · ${f.priceUSD.toFixed(3)}/L</div>
-                      </div>
-                      <div style={{textAlign:"right"}}>
-                        <div className={`fuel-row-liters ${!liters?"fuel-empty":""}`}>
-                          {liters ? fmtConv(liters) : "—"}
-                        </div>
-                        <div className="fuel-row-unit">litros</div>
-                      </div>
-                    </div>
-                  );
-                })}
               </div>
 
               {/* ⛽ Calcular costo por litros deseados → Bs y USD */}
