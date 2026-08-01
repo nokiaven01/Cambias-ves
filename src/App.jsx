@@ -9,6 +9,25 @@ const FALLBACK_RATES = {
   usdt: 780.00,
 };
 
+/* ─── MONEDAS DE LA CALCULADORA CONVERTIBLE ────────────────────────────── */
+const CURRENCIES = [
+  { id: "bs",   label: "Bs",   symbol: "Bs", icon: "🇻🇪", full: "Bolívares" },
+  { id: "usd",  label: "USD",  symbol: "$",  icon: "💵", full: "Dólares" },
+  { id: "eur",  label: "EUR",  symbol: "€",  icon: "💶", full: "Euros" },
+  { id: "usdt", label: "USDT", symbol: "₮",  icon: "₮",  full: "Tether USDT" },
+];
+
+/* Valor en Bolívares de 1 unidad de la moneda indicada, según las tasas actuales. */
+function rateToBs(id, rates) {
+  switch (id) {
+    case "bs":   return 1;
+    case "usd":  return rates.bcv;
+    case "eur":  return rates.euro;
+    case "usdt": return rates.usdt;
+    default:     return null;
+  }
+}
+
 /* ─── BANCOS NACIONALES DE VENEZUELA (código IBP · nombre) ─────────────── */
 const BANCOS_VE = [
   { code: "0102", name: "Banco de Venezuela" },
@@ -243,6 +262,62 @@ const styles = `
     color: #fff; box-shadow: 0 2px 12px rgba(59,130,246,0.3);
   }
   .toggle-btn:not(.active-bs):not(.active-usd):active { background: rgba(255,255,255,0.06); }
+
+  /* CONVERTIBLE CURRENCY SELECTOR (De → A, 4 monedas) */
+  .conv-selector {
+    background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08);
+    border-radius: 14px; padding: 12px; margin-bottom: 14px;
+    display: flex; flex-direction: column; gap: 10px;
+  }
+  .conv-cur-group { display: flex; flex-direction: column; gap: 7px; }
+  .conv-cur-caption {
+    font-size: 10px; font-weight: 700; letter-spacing: 1px; text-transform: uppercase;
+    color: #64748b;
+  }
+  .conv-cur-chips { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; }
+  .conv-chip {
+    display: flex; align-items: center; justify-content: center; gap: 4px;
+    padding: 9px 4px; border: 1px solid rgba(255,255,255,0.08);
+    background: rgba(255,255,255,0.03); border-radius: 10px;
+    font-family: 'Exo 2', sans-serif; font-size: 12px; font-weight: 700;
+    color: #94a3b8; cursor: pointer; transition: all .15s ease; user-select: none;
+  }
+  .conv-chip span { font-size: 13px; }
+  .conv-chip:active { transform: scale(0.95); }
+  .conv-chip.sel {
+    background: linear-gradient(135deg, #eab308, #ca8a04);
+    color: #0a0d12; border-color: transparent;
+    box-shadow: 0 2px 10px rgba(234,179,8,0.28);
+  }
+  .conv-swap-btn {
+    align-self: center; padding: 6px 16px; border-radius: 20px;
+    border: 1px solid rgba(255,255,255,0.1); background: rgba(255,255,255,0.05);
+    color: #cbd5e1; font-family: 'Exo 2', sans-serif; font-size: 12px; font-weight: 700;
+    cursor: pointer; transition: all .15s ease; user-select: none;
+  }
+  .conv-swap-btn:active { transform: scale(0.94); background: rgba(255,255,255,0.1); }
+
+  /* RESULTADO DE LA CONVERSIÓN AUTOMÁTICA */
+  .conv-result-card {
+    background: rgba(234,179,8,0.05); border: 1px solid rgba(234,179,8,0.2);
+    border-radius: 14px; padding: 14px 16px; margin-bottom: 14px;
+  }
+  .conv-result-top {
+    display: flex; align-items: center; gap: 10px; margin-bottom: 6px;
+  }
+  .conv-result-from {
+    font-family: 'JetBrains Mono', monospace; font-size: 13px; font-weight: 600; color: #94a3b8;
+  }
+  .conv-result-arrow { color: #64748b; font-size: 13px; }
+  .conv-result-value {
+    font-family: 'JetBrains Mono', monospace; font-size: 24px; font-weight: 700;
+    color: #eab308; word-break: break-all; line-height: 1.15;
+  }
+  .conv-result-value.empty { color: #334155; }
+  .conv-result-cur { font-size: 15px; font-weight: 600; color: #cbd5e1; }
+  .conv-result-rate {
+    font-size: 11px; color: #64748b; font-family: 'JetBrains Mono', monospace; margin-top: 6px;
+  }
 
   /* WA SEND BUTTON under calc */
   .wa-send-btn {
@@ -676,21 +751,12 @@ function lastUpdStr(ts) {
 }
 
 /* Build WhatsApp cotización message */
-function buildWaQuote(rates, amount, calcMode, conv, today, pagoMovil, tasaPago) {
+function buildWaQuote(rates, amount, fromMeta, toMeta, convResult, today, pagoMovil, tasaPago) {
   const num = parseFloat(amount) || 0;
   let msg = `🇻🇪 *Cotizaciones BCV - ${today}*\n`;
-  if (num > 0) {
-    const fromLabel = calcMode === "bs" ? `${fmt(num)} Bs` : `${fmtConv(num)} USD`;
-    msg += `\n💱 *Conversión de ${fromLabel}:*\n`;
-    if (calcMode === "bs") {
-      if (conv.bcv != null)          msg += `  → USD BCV:     *${fmtConv(conv.bcv)} $*\n`;
-      if (conv.euro != null)         msg += `  → EUR BCV:     *${fmtConv(conv.euro)} €*\n`;
-      if (conv.usdt != null)         msg += `  → USDT:        *${fmtConv(conv.usdt)} ₮*\n`;
-    } else {
-      if (conv.bcv != null)          msg += `  → Bs (BCV):     *${fmtConv(conv.bcv)} Bs*\n`;
-      if (conv.euro != null)         msg += `  → Bs (Euro):    *${fmtConv(conv.euro)} Bs*\n`;
-      if (conv.usdt != null)         msg += `  → Bs (USDT):    *${fmtConv(conv.usdt)} Bs*\n`;
-    }
+  if (num > 0 && convResult != null) {
+    msg += `\n💱 *Conversión:*\n`;
+    msg += `  ${fmtConv(num)} ${fromMeta.label} → *${fmtConv(convResult)} ${toMeta.label}*\n`;
   }
   // Tasa elegida para realizar el pago
   if (tasaPago && rates[tasaPago] != null) {
@@ -726,7 +792,8 @@ export default function App() {
   const [fromApi, setFromApi]     = useState(false);
   const [lastUpdate, setLastUpdate] = useState(null);
   const [isOnline, setIsOnline]   = useState(typeof navigator !== "undefined" ? navigator.onLine : true);
-  const [calcMode, setCalcMode]   = useState("bs"); // "bs" | "usd"
+  const [fromCurrency, setFromCurrency] = useState("bs");  // moneda del monto ingresado
+  const [toCurrency, setToCurrency]     = useState("usd"); // moneda a la que se convierte
   const [amount, setAmount]       = useState("");
   const [litros, setLitros]       = useState(""); // litros deseados para calcular costo
   const [modal, setModal]         = useState(null); // null | 'cotizacion'
@@ -815,23 +882,23 @@ export default function App() {
     return () => clearInterval(interval);
   }, [loadRates]);
 
-  /* Derived – dual mode calculator */
+  /* Derived – calculadora convertible entre 4 monedas (Bs, USD, EUR, USDT) */
   const inputNum = parseFloat(cleanVEAmount(amount)) || 0;
 
-  // When mode=bs: input is Bolívares → results in foreign currency
-  // When mode=usd: input is USD → results in Bolívares via each rate
-  const conv = {
-    bcv:          inputNum && rates.bcv          ? (calcMode==="bs" ? inputNum/rates.bcv          : inputNum*rates.bcv)          : null,
-    euro:         inputNum && rates.euro         ? (calcMode==="bs" ? inputNum/rates.euro         : inputNum*rates.euro)         : null,
-    usdt:         inputNum && rates.usdt         ? (calcMode==="bs" ? inputNum/rates.usdt         : inputNum*rates.usdt)         : null,
-  };
+  const fromMeta = CURRENCIES.find(c => c.id === fromCurrency) || CURRENCIES[0];
+  const toMeta   = CURRENCIES.find(c => c.id === toCurrency)   || CURRENCIES[1];
 
-  // Result labels & currencies change with mode
-  const resultMeta = {
-    bcv:          { label: calcMode==="bs" ? "USD BCV"     : "Bs · BCV",     currency: calcMode==="bs" ? "USD"   : "Bs." },
-    euro:         { label: calcMode==="bs" ? "EUR BCV"     : "Bs · Euro",    currency: calcMode==="bs" ? "Euros" : "Bs." },
-    usdt:         { label: calcMode==="bs" ? "USDT"        : "Bs · USDT",    currency: calcMode==="bs" ? "USDT"  : "Bs." },
-  };
+  // Conversión automática: origen → Bs → destino
+  const fromBsRate = rateToBs(fromCurrency, rates);
+  const toBsRate   = rateToBs(toCurrency, rates);
+  const convResult =
+    inputNum && fromBsRate && toBsRate
+      ? (inputNum * fromBsRate) / toBsRate
+      : null;
+
+  // Tasa efectiva (1 unidad origen = X unidades destino)
+  const effectiveRate =
+    fromBsRate && toBsRate ? fromBsRate / toBsRate : null;
 
   // Precios de gasolina Venezuela 2026 (Bs/litro usando tasa BCV)
   const FUEL = [
@@ -864,7 +931,7 @@ export default function App() {
   // Confirma y envía la cotización por WhatsApp (con o sin datos de Pago Móvil)
   const confirmWaCotizacion = () => {
     const pm = incluirPago ? pagoMovil : null;
-    const msg = buildWaQuote(rates, inputNum, calcMode, conv, today, pm, tasaPago);
+    const msg = buildWaQuote(rates, inputNum, fromMeta, toMeta, convResult, today, pm, tasaPago);
     window.open(`https://wa.me/?text=${encodeURIComponent(msg)}`, "_blank");
     setModal(null);
   };
@@ -930,27 +997,50 @@ export default function App() {
         <div className="calculator">
           <div className="calc-title">⇄ Calculadora Convertible</div>
 
-          {/* Currency mode toggle */}
-          <div className="currency-toggle">
+          {/* Selector de monedas: De → A */}
+          <div className="conv-selector">
+            <div className="conv-cur-group">
+              <div className="conv-cur-caption">De</div>
+              <div className="conv-cur-chips">
+                {CURRENCIES.map(c => (
+                  <button
+                    key={`from-${c.id}`}
+                    className={`conv-chip ${fromCurrency === c.id ? "sel" : ""}`}
+                    onClick={() => setFromCurrency(c.id)}
+                  >
+                    <span>{c.icon}</span> {c.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+
             <button
-              className={`toggle-btn ${calcMode==="bs" ? "active-bs" : ""}`}
-              onClick={() => { setCalcMode("bs"); setAmount(""); }}
+              className="conv-swap-btn"
+              onClick={() => { setFromCurrency(toCurrency); setToCurrency(fromCurrency); }}
+              title="Intercambiar monedas"
             >
-              <span>🇻🇪</span> Bolívares - Dólares
+              ⇅ Intercambiar
             </button>
-            <button
-              className={`toggle-btn ${calcMode==="usd" ? "active-usd" : ""}`}
-              onClick={() => { setCalcMode("usd"); setAmount(""); }}
-            >
-              <span>💵</span> Dólares - Bolívares
-            </button>
+
+            <div className="conv-cur-group">
+              <div className="conv-cur-caption">A</div>
+              <div className="conv-cur-chips">
+                {CURRENCIES.map(c => (
+                  <button
+                    key={`to-${c.id}`}
+                    className={`conv-chip ${toCurrency === c.id ? "sel" : ""}`}
+                    onClick={() => setToCurrency(c.id)}
+                  >
+                    <span>{c.icon}</span> {c.label}
+                  </button>
+                ))}
+              </div>
+            </div>
           </div>
 
-          {/* Input */}
+          {/* Input — solo el monto, sin especificar moneda */}
           <div className="input-wrapper">
-            <span className="input-label" style={calcMode==="usd"?{background:"rgba(59,130,246,0.15)",color:"#60a5fa"}:{}}>
-              {calcMode==="bs" ? "Bs." : "USD $"}
-            </span>
+            <span className="input-label">Monto</span>
             <input
               className="bs-input"
               type="text" inputMode="numeric"
@@ -960,48 +1050,30 @@ export default function App() {
             />
           </div>
 
-          {/* Extra conversion: Bs→USD o USD→Bs usando tasa BCV */}
-          {inputNum > 0 && rates.bcv && (
-            <div className="extra-conv">
-              {calcMode === "bs" ? (
-                <>
-                  <div>
-                    <div className="extra-conv-label">Equivale en USD (BCV)</div>
-                    <div className="extra-conv-value">${fmtConv(inputNum / rates.bcv)}</div>
-                  </div>
-                  <div style={{textAlign:"right"}}>
-                    <div className="extra-conv-label">Tasa usada</div>
-                    <div className="extra-conv-unit">{fmt(rates.bcv)} Bs/USD</div>
-                  </div>
-                </>
-              ) : (
-                <>
-                  <div>
-                    <div className="extra-conv-label">Equivale en Bs (BCV)</div>
-                    <div className="extra-conv-value">{fmt(inputNum * rates.bcv)} Bs</div>
-                  </div>
-                  <div style={{textAlign:"right"}}>
-                    <div className="extra-conv-label">Tasa usada</div>
-                    <div className="extra-conv-unit">{fmt(rates.bcv)} Bs/USD</div>
-                  </div>
-                </>
-              )}
+          {/* Resultado de la conversión automática */}
+          <div className="conv-result-card">
+            <div className="conv-result-top">
+              <span className="conv-result-from">
+                {inputNum > 0 ? fmtConv(inputNum) : "0,00"} {fromMeta.label}
+              </span>
+              <span className="conv-result-arrow">→</span>
             </div>
-          )}
-
-          {/* Results grid — BCV slot replaced by fuel calculator */}
-          <div className="results-grid">
-
-            {/* Tarjetas de conversión: Euro BCV, USDT (primero) */}
-            {rateCards.filter(c => c.id !== "bcv").map(card => (
-              <div key={card.id} className={`result-card ${card.id}`}>
-                <div className="result-label">{resultMeta[card.id].label}</div>
-                <div className={`result-value ${conv[card.id]==null?"empty":""}`}>
-                  {conv[card.id]!=null ? fmtConv(conv[card.id]) : "—"}
-                </div>
-                <div className="result-currency">{resultMeta[card.id].currency}</div>
+            <div className={`conv-result-value ${convResult == null ? "empty" : ""}`}>
+              {convResult != null ? fmtConv(convResult) : "—"}
+              <span className="conv-result-cur"> {toMeta.label}</span>
+            </div>
+            {effectiveRate != null && fromCurrency !== toCurrency && (
+              <div className="conv-result-rate">
+                1 {fromMeta.label} = {fmtConv(effectiveRate)} {toMeta.label}
               </div>
-            ))}
+            )}
+            {fromCurrency === toCurrency && (
+              <div className="conv-result-rate">Selecciona monedas distintas</div>
+            )}
+          </div>
+
+          {/* Results grid — calculadora de gasolina */}
+          <div className="results-grid">
 
             {/* ⛽ CALCULADORA DE GASOLINA — ubicada debajo de EURO BCV y USDT */}
             <div className="fuel-card">
