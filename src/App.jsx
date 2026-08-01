@@ -2,7 +2,6 @@ import { useState, useEffect, useCallback, useRef } from "react";
 
 const STORAGE_KEY = "vzla_cambio_cache_v3";
 const CACHE_TTL = 2 * 60 * 60 * 1000; // 2 horas
-const APP_URL = typeof window !== "undefined" ? window.location.href : "https://claude.ai";
 
 const FALLBACK_RATES = {
   bcv: 602.33,          // BCV oficial USD — 18/06/2026 (bcv.today)
@@ -95,22 +94,6 @@ const styles = `
   @keyframes spin { to{transform:rotate(360deg)} }
   .last-update { font-size:11px; color:#64748b; font-family:'JetBrains Mono',monospace; margin-top:6px; }
 
-  /* ACTION BUTTONS ROW */
-  .action-row {
-    display: flex; gap: 8px; padding: 0 16px; margin-bottom: 14px;
-    position: relative; z-index: 1;
-  }
-  .action-btn {
-    flex: 1; display: flex; align-items: center; justify-content: center; gap: 6px;
-    padding: 9px 8px; border-radius: 12px; border: none; cursor: pointer;
-    font-family: 'Exo 2', sans-serif; font-size: 12px; font-weight: 700;
-    transition: all 0.18s ease; user-select: none;
-  }
-  .action-btn:active { transform: scale(0.95); }
-  .btn-share  { background: rgba(59,130,246,0.15); color: #60a5fa; border: 1px solid rgba(59,130,246,0.25); }
-  .btn-qr     { background: rgba(139,92,246,0.15); color: #a78bfa; border: 1px solid rgba(139,92,246,0.25); }
-  .btn-wa-quote { background: rgba(34,197,94,0.15); color: #4ade80; border: 1px solid rgba(34,197,94,0.25); }
-
   /* RATES */
   .section-label {
     font-size:10px; font-weight:700; letter-spacing:2px; text-transform:uppercase;
@@ -174,12 +157,6 @@ const styles = `
   .result-value { font-family:'JetBrains Mono',monospace; font-size:15px; font-weight:600; color:#f1f5f9; word-break:break-all; }
   .result-value.empty { color:#334155; }
   .result-currency { font-size:10px; color:#475569; margin-top:2px; }
-
-  .btn-apk {
-    background: rgba(34,197,94,0.12); color: #4ade80;
-    border: 1px solid rgba(34,197,94,0.25);
-    font-size: 11px; padding: 7px 8px; border-radius: 10px;
-  }
 
   /* EXTRA CONVERSION ROW (Bs↔USD inline summary) */
   .extra-conv {
@@ -296,21 +273,6 @@ const styles = `
   .modal-handle { width:40px; height:4px; background:rgba(255,255,255,0.15); border-radius:2px; margin:0 auto 20px; }
   .modal-title { font-size:16px; font-weight:800; color:#f1f5f9; margin-bottom:18px; text-align:center; }
 
-  /* SHARE OPTIONS */
-  .share-options { display:flex; flex-direction:column; gap:10px; }
-  .share-opt {
-    display:flex; align-items:center; gap:14px;
-    background:rgba(255,255,255,0.04); border:1px solid rgba(255,255,255,0.08);
-    border-radius:14px; padding:14px 16px; cursor:pointer; transition:all .15s;
-    user-select:none;
-  }
-  .share-opt:active { background:rgba(255,255,255,0.08); transform:scale(0.98); }
-  .share-opt-icon { font-size:22px; width:36px; text-align:center; flex-shrink:0; }
-  .share-opt-text { flex:1; }
-  .share-opt-title { font-size:14px; font-weight:700; color:#f1f5f9; }
-  .share-opt-desc  { font-size:11px; color:#64748b; margin-top:2px; }
-  .share-opt-arrow { color:#475569; font-size:16px; }
-
   /* PAGO MÓVIL FORM (cotización WhatsApp) */
   .pm-intro { font-size:12px; color:#94a3b8; text-align:center; margin:-8px 0 16px; line-height:1.5; }
   .pm-toggle {
@@ -389,15 +351,6 @@ const styles = `
   .pm-rate-name { font-size:13px; font-weight:700; color:#f1f5f9; display:flex; align-items:center; gap:6px; }
   .pm-rate-val { font-size:12px; color:#94a3b8; font-family:'JetBrains Mono',monospace; }
   .pm-rate-chip.sel .pm-rate-val { color:#4ade80; }
-
-  /* QR CONTAINER */
-  .qr-wrap { display:flex; flex-direction:column; align-items:center; gap:14px; }
-  .qr-box {
-    background: #fff; border-radius: 16px; padding: 16px;
-    display:flex; align-items:center; justify-content:center;
-  }
-  .qr-caption { font-size:11px; color:#64748b; text-align:center; font-family:'JetBrains Mono',monospace; line-height:1.6; }
-  .qr-url { color:#eab308; font-size:10px; word-break:break-all; margin-top:4px; }
 
   /* MODAL CLOSE BTN */
   .modal-close {
@@ -722,11 +675,6 @@ function lastUpdStr(ts) {
   return new Date(ts).toLocaleString("es-VE",{hour:"2-digit",minute:"2-digit",day:"2-digit",month:"2-digit"});
 }
 
-/* QR generator using qrserver.com (works offline via cached img after first load) */
-function qrUrl(text) {
-  return `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(text)}&bgcolor=ffffff&color=0a0d12`;
-}
-
 /* Build WhatsApp cotización message */
 function buildWaQuote(rates, amount, calcMode, conv, today, pagoMovil, tasaPago) {
   const num = parseFloat(amount) || 0;
@@ -781,7 +729,7 @@ export default function App() {
   const [calcMode, setCalcMode]   = useState("bs"); // "bs" | "usd"
   const [amount, setAmount]       = useState("");
   const [litros, setLitros]       = useState(""); // litros deseados para calcular costo
-  const [modal, setModal]         = useState(null); // null | 'share' | 'qr' | 'cotizacion'
+  const [modal, setModal]         = useState(null); // null | 'cotizacion'
   const [toast, setToast]         = useState(null);
   const [showDonate, setShowDonate] = useState(false);
   const toastTimer = useRef(null);
@@ -909,33 +857,6 @@ export default function App() {
     { id:"usdt",         icon:"₮",  name:"USDT",                 subtitle:"Binance P2P · Promedio",     value:rates.usdt,         unit:"Bs/USDT", src:"Binance P2P"   },
   ];
 
-  /* ── Share actions ── */
-  const handleShare = async () => {
-    if (navigator.share) {
-      try {
-        await navigator.share({ title: "Cambio VES", text: "Cotizaciones BCV Venezuela", url: APP_URL });
-        return;
-      } catch (_) {}
-    }
-    setModal("share");
-  };
-
-  const copyLink = async () => {
-    try { await navigator.clipboard.writeText(APP_URL); showToast("✓ Enlace copiado"); }
-    catch (_) { showToast("No se pudo copiar"); }
-  };
-
-  const openWhatsAppShare = () => {
-    const msg = `🇻🇪 *Cambio VES* – Tasas BCV al ${today}\nAbre la app: ${APP_URL}`;
-    window.open(`https://wa.me/?text=${encodeURIComponent(msg)}`, "_blank");
-  };
-
-  const openBrowserShare = () => {
-    if (navigator.share) { navigator.share({ title:"Cambio VES", url: APP_URL }); }
-    else { copyLink(); }
-    setModal(null);
-  };
-
   /* ── WA Cotización ── */
   // Abre el formulario de Pago Móvil antes de enviar
   const sendWaCotizacion = () => setModal("cotizacion");
@@ -978,16 +899,6 @@ export default function App() {
             ? <div className="last-update">Actualizado: {lastUpdStr(lastUpdate)}</div>
             : <div className="last-update">Tasas al {today}</div>
           }
-        </div>
-
-        {/* ACTION ROW: Compartir (enlace + QR) · Descarga App */}
-        <div className="action-row">
-          <button className="action-btn btn-share" onClick={() => setModal("share")}>
-            🔗 Compartir / QR
-          </button>
-          <a className="action-btn btn-apk" href="https://t.me/cambiasves/2" target="_blank" rel="noreferrer">
-            ⬇ Descarga App
-          </a>
         </div>
 
         {/* RATES */}
@@ -1374,92 +1285,6 @@ export default function App() {
               Enviar por WhatsApp
             </button>
             <button className="modal-close" onClick={() => setModal(null)}>Cancelar</button>
-          </div>
-        </div>
-      )}
-
-      {/* ── MODAL: COMPARTIR ── */}
-      {modal === "share" && (
-        <div className="modal-overlay" onClick={() => setModal(null)}>
-          <div className="modal-sheet" onClick={e => e.stopPropagation()}>
-            <div className="modal-handle"/>
-            <div className="modal-title">Compartir app</div>
-            <div className="share-options">
-              <div className="share-opt" onClick={openWhatsAppShare}>
-                <div className="share-opt-icon">💬</div>
-                <div className="share-opt-text">
-                  <div className="share-opt-title">WhatsApp</div>
-                  <div className="share-opt-desc">Enviar enlace por mensaje</div>
-                </div>
-                <div className="share-opt-arrow">›</div>
-              </div>
-              <div className="share-opt" onClick={copyLink}>
-                <div className="share-opt-icon">🔗</div>
-                <div className="share-opt-text">
-                  <div className="share-opt-title">Copiar enlace</div>
-                  <div className="share-opt-desc">Para compartir en cualquier app</div>
-                </div>
-                <div className="share-opt-arrow">›</div>
-              </div>
-              <div className="share-opt" onClick={openBrowserShare}>
-                <div className="share-opt-icon">🌐</div>
-                <div className="share-opt-text">
-                  <div className="share-opt-title">Más opciones</div>
-                  <div className="share-opt-desc">Menú nativo del navegador</div>
-                </div>
-                <div className="share-opt-arrow">›</div>
-              </div>
-              <div className="share-opt" onClick={() => { setModal("qr"); }}>
-                <div className="share-opt-icon">▦</div>
-                <div className="share-opt-text">
-                  <div className="share-opt-title">Código QR</div>
-                  <div className="share-opt-desc">Escanear para abrir</div>
-                </div>
-                <div className="share-opt-arrow">›</div>
-              </div>
-            </div>
-            <button className="modal-close" onClick={() => setModal(null)}>Cerrar</button>
-          </div>
-        </div>
-      )}
-
-      {/* ── MODAL: QR ── */}
-      {modal === "qr" && (
-        <div className="modal-overlay" onClick={() => setModal(null)}>
-          <div className="modal-sheet" onClick={e => e.stopPropagation()}>
-            <div className="modal-handle"/>
-            <div className="modal-title">Código QR</div>
-            <div className="qr-wrap">
-              <div className="qr-box">
-                <img
-                  src={qrUrl(APP_URL)}
-                  alt="QR Cambio VES"
-                  width={200} height={200}
-                  style={{borderRadius:8,display:"block"}}
-                />
-              </div>
-              <div className="qr-caption">
-                Escanea para abrir la app<br/>
-                <span className="qr-url">{APP_URL}</span>
-              </div>
-              <div className="share-options" style={{width:"100%"}}>
-                <div className="share-opt" onClick={copyLink}>
-                  <div className="share-opt-icon">🔗</div>
-                  <div className="share-opt-text">
-                    <div className="share-opt-title">Copiar enlace</div>
-                    <div className="share-opt-desc">Para compartir manualmente</div>
-                  </div>
-                </div>
-                <div className="share-opt" onClick={openWhatsAppShare}>
-                  <div className="share-opt-icon">💬</div>
-                  <div className="share-opt-text">
-                    <div className="share-opt-title">Enviar por WhatsApp</div>
-                    <div className="share-opt-desc">Compartir enlace por chat</div>
-                  </div>
-                </div>
-              </div>
-            </div>
-            <button className="modal-close" onClick={() => setModal(null)}>Cerrar</button>
           </div>
         </div>
       )}
