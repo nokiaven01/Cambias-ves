@@ -263,60 +263,64 @@ const styles = `
   }
   .toggle-btn:not(.active-bs):not(.active-usd):active { background: rgba(255,255,255,0.06); }
 
-  /* CONVERTIBLE CURRENCY SELECTOR (De → A, 4 monedas) */
-  .conv-selector {
-    background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08);
-    border-radius: 14px; padding: 12px; margin-bottom: 14px;
-    display: flex; flex-direction: column; gap: 10px;
+  /* CONVERSOR ESTILO BNC — dos filas (monto arriba / resultado abajo) */
+  .bnc-conv { position: relative; margin-bottom: 14px; }
+  .bnc-row {
+    display: flex; align-items: center; gap: 12px;
+    background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.1);
+    border-radius: 16px; padding: 14px 16px; transition: border-color .2s, background .2s;
   }
-  .conv-cur-group { display: flex; flex-direction: column; gap: 7px; }
-  .conv-cur-caption {
-    font-size: 10px; font-weight: 700; letter-spacing: 1px; text-transform: uppercase;
-    color: #64748b;
+  .bnc-row + .bnc-row { margin-top: 10px; }
+  .bnc-row:focus-within { border-color: rgba(234,179,8,0.4); background: rgba(234,179,8,0.03); }
+  .bnc-row.result { background: rgba(234,179,8,0.06); border-color: rgba(234,179,8,0.22); }
+  .bnc-row-info { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 3px; }
+  .bnc-row-caption {
+    font-size: 10px; font-weight: 700; letter-spacing: 1px; text-transform: uppercase; color: #64748b;
   }
-  .conv-cur-chips { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; }
-  .conv-chip {
-    display: flex; align-items: center; justify-content: center; gap: 4px;
-    padding: 9px 4px; border: 1px solid rgba(255,255,255,0.08);
-    background: rgba(255,255,255,0.03); border-radius: 10px;
-    font-family: 'Exo 2', sans-serif; font-size: 12px; font-weight: 700;
-    color: #94a3b8; cursor: pointer; transition: all .15s ease; user-select: none;
+  .bnc-amount-input {
+    background: none; border: none; outline: none; color: #f1f5f9;
+    font-family: 'JetBrains Mono', monospace; font-size: 22px; font-weight: 700;
+    width: 100%; padding: 0;
   }
-  .conv-chip span { font-size: 13px; }
-  .conv-chip:active { transform: scale(0.95); }
-  .conv-chip.sel {
-    background: linear-gradient(135deg, #eab308, #ca8a04);
-    color: #0a0d12; border-color: transparent;
-    box-shadow: 0 2px 10px rgba(234,179,8,0.28);
+  .bnc-amount-input::placeholder { color: #334155; }
+  .bnc-result-value {
+    font-family: 'JetBrains Mono', monospace; font-size: 22px; font-weight: 700;
+    color: #eab308; word-break: break-all; line-height: 1.2;
   }
-  .conv-swap-btn {
-    align-self: center; padding: 6px 16px; border-radius: 20px;
-    border: 1px solid rgba(255,255,255,0.1); background: rgba(255,255,255,0.05);
-    color: #cbd5e1; font-family: 'Exo 2', sans-serif; font-size: 12px; font-weight: 700;
-    cursor: pointer; transition: all .15s ease; user-select: none;
-  }
-  .conv-swap-btn:active { transform: scale(0.94); background: rgba(255,255,255,0.1); }
+  .bnc-result-value.empty { color: #475569; font-size: 16px; }
 
-  /* RESULTADO DE LA CONVERSIÓN AUTOMÁTICA */
-  .conv-result-card {
-    background: rgba(234,179,8,0.05); border: 1px solid rgba(234,179,8,0.2);
-    border-radius: 14px; padding: 14px 16px; margin-bottom: 14px;
+  /* Selector de moneda (dropdown nativo estilizado) */
+  .bnc-cur-select { position: relative; flex-shrink: 0; }
+  .bnc-select {
+    -webkit-appearance: none; -moz-appearance: none; appearance: none;
+    background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.12);
+    border-radius: 12px; padding: 10px 30px 10px 14px; cursor: pointer;
+    color: #f1f5f9; font-family: 'Exo 2', sans-serif; font-size: 14px; font-weight: 700;
+    outline: none; transition: all .15s ease;
   }
-  .conv-result-top {
-    display: flex; align-items: center; gap: 10px; margin-bottom: 6px;
+  .bnc-select:focus { border-color: rgba(234,179,8,0.5); }
+  .bnc-select option { background: #131820; color: #f1f5f9; }
+  .bnc-select-arrow {
+    position: absolute; right: 11px; top: 50%; transform: translateY(-50%);
+    font-size: 11px; color: #94a3b8; pointer-events: none;
   }
-  .conv-result-from {
-    font-family: 'JetBrains Mono', monospace; font-size: 13px; font-weight: 600; color: #94a3b8;
+
+  /* Botón de intercambio central */
+  .bnc-swap-wrap { display: flex; justify-content: center; height: 0; position: relative; z-index: 3; }
+  .bnc-swap {
+    width: 40px; height: 40px; border-radius: 50%;
+    margin-top: -20px; margin-bottom: -20px;
+    background: linear-gradient(135deg, #eab308, #ca8a04); color: #0a0d12;
+    border: 3px solid #0a0d12; font-size: 17px; font-weight: 900;
+    cursor: pointer; transition: transform .18s ease;
+    display: flex; align-items: center; justify-content: center;
+    box-shadow: 0 2px 10px rgba(234,179,8,0.35);
   }
-  .conv-result-arrow { color: #64748b; font-size: 13px; }
-  .conv-result-value {
-    font-family: 'JetBrains Mono', monospace; font-size: 24px; font-weight: 700;
-    color: #eab308; word-break: break-all; line-height: 1.15;
-  }
-  .conv-result-value.empty { color: #334155; }
-  .conv-result-cur { font-size: 15px; font-weight: 600; color: #cbd5e1; }
-  .conv-result-rate {
-    font-size: 11px; color: #64748b; font-family: 'JetBrains Mono', monospace; margin-top: 6px;
+  .bnc-swap:active { transform: rotate(180deg) scale(0.9); }
+
+  .bnc-rate-note {
+    text-align: center; font-size: 11px; color: #64748b;
+    font-family: 'JetBrains Mono', monospace; margin-top: 10px;
   }
 
   /* WA SEND BUTTON under calc */
@@ -997,78 +1001,75 @@ export default function App() {
         <div className="calculator">
           <div className="calc-title">⇄ Calculadora Convertible</div>
 
-          {/* Selector de monedas: De → A */}
-          <div className="conv-selector">
-            <div className="conv-cur-group">
-              <div className="conv-cur-caption">De</div>
-              <div className="conv-cur-chips">
-                {CURRENCIES.map(c => (
-                  <button
-                    key={`from-${c.id}`}
-                    className={`conv-chip ${fromCurrency === c.id ? "sel" : ""}`}
-                    onClick={() => setFromCurrency(c.id)}
-                  >
-                    <span>{c.icon}</span> {c.label}
-                  </button>
-                ))}
+          {/* Conversor estilo BNC: dos filas (monto arriba, resultado abajo) */}
+          <div className="bnc-conv">
+
+            {/* Fila 1 — MONTO (editable) + moneda de origen */}
+            <div className="bnc-row">
+              <div className="bnc-row-info">
+                <span className="bnc-row-caption">Monto</span>
+                <input
+                  className="bnc-amount-input"
+                  type="text" inputMode="numeric"
+                  placeholder="0,00"
+                  value={amount}
+                  onChange={handleAmountChange}
+                />
+              </div>
+              <div className="bnc-cur-select">
+                <select
+                  className="bnc-select"
+                  value={fromCurrency}
+                  onChange={(e) => setFromCurrency(e.target.value)}
+                >
+                  {CURRENCIES.map(c => (
+                    <option key={`from-${c.id}`} value={c.id}>{c.icon} {c.label}</option>
+                  ))}
+                </select>
+                <span className="bnc-select-arrow">▾</span>
               </div>
             </div>
 
-            <button
-              className="conv-swap-btn"
-              onClick={() => { setFromCurrency(toCurrency); setToCurrency(fromCurrency); }}
-              title="Intercambiar monedas"
-            >
-              ⇅ Intercambiar
-            </button>
+            {/* Botón de intercambio */}
+            <div className="bnc-swap-wrap">
+              <button
+                className="bnc-swap"
+                onClick={() => { setFromCurrency(toCurrency); setToCurrency(fromCurrency); }}
+                title="Intercambiar monedas"
+              >
+                ⇅
+              </button>
+            </div>
 
-            <div className="conv-cur-group">
-              <div className="conv-cur-caption">A</div>
-              <div className="conv-cur-chips">
-                {CURRENCIES.map(c => (
-                  <button
-                    key={`to-${c.id}`}
-                    className={`conv-chip ${toCurrency === c.id ? "sel" : ""}`}
-                    onClick={() => setToCurrency(c.id)}
-                  >
-                    <span>{c.icon}</span> {c.label}
-                  </button>
-                ))}
+            {/* Fila 2 — RESULTADO + moneda de destino */}
+            <div className="bnc-row result">
+              <div className="bnc-row-info">
+                <span className="bnc-row-caption">Recibes</span>
+                <div className={`bnc-result-value ${convResult == null ? "empty" : ""}`}>
+                  {convResult != null
+                    ? fmtConv(convResult)
+                    : fromCurrency === toCurrency ? "Elige otra moneda" : "0,00"}
+                </div>
+              </div>
+              <div className="bnc-cur-select">
+                <select
+                  className="bnc-select"
+                  value={toCurrency}
+                  onChange={(e) => setToCurrency(e.target.value)}
+                >
+                  {CURRENCIES.map(c => (
+                    <option key={`to-${c.id}`} value={c.id}>{c.icon} {c.label}</option>
+                  ))}
+                </select>
+                <span className="bnc-select-arrow">▾</span>
               </div>
             </div>
-          </div>
 
-          {/* Input — solo el monto, sin especificar moneda */}
-          <div className="input-wrapper">
-            <span className="input-label">Monto</span>
-            <input
-              className="bs-input"
-              type="text" inputMode="numeric"
-              placeholder="0,00"
-              value={amount}
-              onChange={handleAmountChange}
-            />
-          </div>
-
-          {/* Resultado de la conversión automática */}
-          <div className="conv-result-card">
-            <div className="conv-result-top">
-              <span className="conv-result-from">
-                {inputNum > 0 ? fmtConv(inputNum) : "0,00"} {fromMeta.label}
-              </span>
-              <span className="conv-result-arrow">→</span>
-            </div>
-            <div className={`conv-result-value ${convResult == null ? "empty" : ""}`}>
-              {convResult != null ? fmtConv(convResult) : "—"}
-              <span className="conv-result-cur"> {toMeta.label}</span>
-            </div>
+            {/* Tasa efectiva */}
             {effectiveRate != null && fromCurrency !== toCurrency && (
-              <div className="conv-result-rate">
+              <div className="bnc-rate-note">
                 1 {fromMeta.label} = {fmtConv(effectiveRate)} {toMeta.label}
               </div>
-            )}
-            {fromCurrency === toCurrency && (
-              <div className="conv-result-rate">Selecciona monedas distintas</div>
             )}
           </div>
 
