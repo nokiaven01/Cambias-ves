@@ -335,6 +335,44 @@ const styles = `
   .wa-send-btn:active { transform: scale(0.97); background: rgba(34,197,94,0.2); }
   .wa-send-btn:disabled { opacity: 0.4; cursor: default; }
 
+  /* ACCIONES LADO A LADO (Pago/Cobro + Apoya este proyecto) */
+  .action-row {
+    display: grid; grid-template-columns: 1fr 1fr; gap: 10px;
+    margin-top: 14px;
+  }
+  .action-btn {
+    position: relative; overflow: hidden;
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    gap: 6px; min-height: 84px; padding: 14px 10px;
+    border-radius: 16px; cursor: pointer; user-select: none;
+    font-family: 'Exo 2', sans-serif; font-weight: 800; text-align: center;
+    transition: transform .16s ease;
+  }
+  .action-btn:active { transform: scale(0.97); }
+  .action-icon { font-size: 24px; line-height: 1; }
+  .action-text { font-size: 13px; line-height: 1.2; }
+
+  .action-btn.wa-action {
+    background: rgba(34,197,94,0.12); border: 1px solid rgba(34,197,94,0.3);
+    color: #4ade80;
+  }
+  .action-btn.wa-action:active { background: rgba(34,197,94,0.2); }
+
+  .action-btn.donate-action {
+    color: #fff; border: 1.5px solid rgba(255,255,255,0.35);
+    text-shadow: 0 1px 3px rgba(0,0,0,0.45);
+    background: linear-gradient(135deg, #f97316, #eab308, #ec4899, #8b5cf6, #3b82f6, #10b981, #f97316);
+    background-size: 300% 300%;
+    animation: donateGradient 6s ease infinite, donateGlow 3s ease-in-out infinite;
+  }
+  .action-badge {
+    position: absolute; top: 6px; left: 50%; transform: translateX(-50%);
+    font-size: 7.5px; font-weight: 900; letter-spacing: 0.5px; white-space: nowrap;
+    background: rgba(0,0,0,0.3); color: #fff; padding: 2px 6px; border-radius: 6px;
+  }
+  .action-btn.donate-action .action-text { margin-top: 4px; }
+  .action-btn.donate-action .donate-chevron { font-size: 11px; }
+
   /* MODAL OVERLAY */
   .modal-overlay {
     position: fixed; inset: 0; background: rgba(0,0,0,0.75); z-index: 100;
@@ -1125,21 +1163,24 @@ export default function App() {
             </div>
           </div>
 
-          {/* Pago/Cotización vía WhatsApp */}
-          <button className="wa-send-btn" onClick={sendWaCotizacion}>
-            <span style={{fontSize:18}}>💬</span>
-            Pago/Cotización vía Whatsapp
-          </button>
+          {/* Acciones lado a lado: Pago/Cobro vía WhatsApp + Apoya este proyecto */}
+          <div className="action-row">
+            <button className="action-btn wa-action" onClick={sendWaCotizacion}>
+              <span className="action-icon">💬</span>
+              <span className="action-text">Pago/Cobro<br/>vía Whatsapp</span>
+            </button>
+            <button className="action-btn donate-action" onClick={() => setShowDonate(v => !v)}>
+              <span className="action-badge">★ IMPORTANTE</span>
+              <span className="action-icon">💛</span>
+              <span className="action-text">
+                Apoya este proyecto{" "}
+                <span className={`donate-chevron ${showDonate ? "open" : ""}`}>▼</span>
+              </span>
+            </button>
+          </div>
         </div>
 
-        {/* ── DONACIONES ── */}
-        <button className="donate-toggle-btn" onClick={() => setShowDonate(v => !v)}>
-          <div className="donate-toggle-btn-left">
-            <span>💛</span> Apoya este proyecto
-          </div>
-          <span className={`donate-chevron ${showDonate ? "open" : ""}`}>▼</span>
-        </button>
-
+        {/* ── DONACIONES (contenido desplegable) ── */}
         <div className={`donate-body ${showDonate ? "open" : ""}`}>
         <div className="donate-section" style={{margin:"8px 0 0",borderRadius:16}}>
           <div className="donate-header">
@@ -1254,7 +1295,7 @@ export default function App() {
         <div className="modal-overlay" onClick={() => setModal(null)}>
           <div className="modal-sheet" onClick={e => e.stopPropagation()}>
             <div className="modal-handle" />
-            <div className="modal-title">Pago/Cotización vía Whatsapp</div>
+            <div className="modal-title">Pago/Cobro vía Whatsapp</div>
             <div className="pm-intro">
               Elige la tasa para el pago y agrega tus datos de Pago Móvil.
               Todo se incluirá en el mensaje.
