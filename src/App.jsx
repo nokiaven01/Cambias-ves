@@ -118,10 +118,10 @@ const styles = `
     font-size:10px; font-weight:700; letter-spacing:2px; text-transform:uppercase;
     color:#475569; padding:0 20px; margin-bottom:10px; position:relative; z-index:1;
   }
-  .rates-grid { padding:0 16px; display:flex; flex-direction:column; gap:10px; position:relative; z-index:1; }
+  .rates-grid { padding:0 16px; display:flex; flex-direction:column; gap:7px; position:relative; z-index:1; }
   .rate-card {
     background:rgba(255,255,255,0.03); border:1px solid rgba(255,255,255,0.07);
-    border-radius:16px; padding:14px 16px;
+    border-radius:12px; padding:9px 12px;
     display:flex; align-items:center; justify-content:space-between;
     transition:all .2s ease; position:relative; overflow:hidden;
   }
@@ -132,22 +132,22 @@ const styles = `
   .rate-card.euro::before         { background:linear-gradient(to bottom,#8b5cf6,#6d28d9); }
   .rate-card.usdt::before         { background:linear-gradient(to bottom,#10b981,#059669); }
   .rate-card:active { transform:scale(0.98); background:rgba(255,255,255,0.05); }
-  .rate-left { display:flex; align-items:center; gap:12px; }
-  .rate-icon { width:40px; height:40px; border-radius:12px; display:flex; align-items:center; justify-content:center; font-size:18px; flex-shrink:0; }
+  .rate-left { display:flex; align-items:center; gap:9px; }
+  .rate-icon { width:30px; height:30px; border-radius:9px; display:flex; align-items:center; justify-content:center; font-size:14px; flex-shrink:0; }
   .rate-icon.bcv          { background:rgba(59,130,246,0.15); }
   .rate-icon.euro         { background:rgba(139,92,246,0.15); }
   .rate-icon.usdt         { background:rgba(16,185,129,0.15); }
-  .rate-name { font-size:14px; font-weight:700; color:#f1f5f9; line-height:1.2; }
-  .rate-subtitle { font-size:11px; color:#64748b; margin-top:1px; }
+  .rate-name { font-size:12.5px; font-weight:700; color:#f1f5f9; line-height:1.15; }
+  .rate-subtitle { font-size:10px; color:#64748b; margin-top:1px; }
   .rate-value { text-align:right; }
-  .rate-amount { font-family:'JetBrains Mono',monospace; font-size:17px; font-weight:600; color:#f8fafc; line-height:1.2; }
-  .rate-amount.loading-text { color:#475569; font-size:13px; animation:shimmer 1.5s infinite; }
+  .rate-amount { font-family:'JetBrains Mono',monospace; font-size:14px; font-weight:600; color:#f8fafc; line-height:1.15; }
+  .rate-amount.loading-text { color:#475569; font-size:12px; animation:shimmer 1.5s infinite; }
   @keyframes shimmer { 0%,100%{opacity:.4} 50%{opacity:1} }
-  .rate-unit { font-size:10px; color:#64748b; text-align:right; font-family:'JetBrains Mono',monospace; }
+  .rate-unit { font-size:9px; color:#64748b; text-align:right; font-family:'JetBrains Mono',monospace; }
   .source-tag {
-    display:inline-block; font-size:9px; color:#4ade80;
+    display:inline-block; font-size:8px; color:#4ade80;
     background:rgba(34,197,94,0.08); border:1px solid rgba(34,197,94,0.15);
-    border-radius:4px; padding:1px 5px; margin-top:2px;
+    border-radius:4px; padding:1px 4px; margin-top:2px;
     font-family:'JetBrains Mono',monospace; letter-spacing:.5px;
   }
 
