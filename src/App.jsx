@@ -330,14 +330,14 @@ const styles = `
   .action-btn {
     position: relative; overflow: hidden;
     display: flex; flex-direction: column; align-items: center; justify-content: center;
-    gap: 6px; min-height: 84px; padding: 14px 10px;
-    border-radius: 16px; cursor: pointer; user-select: none;
+    gap: 4px; min-height: 62px; padding: 9px 8px;
+    border-radius: 13px; cursor: pointer; user-select: none;
     font-family: 'Exo 2', sans-serif; font-weight: 800; text-align: center;
     transition: transform .16s ease;
   }
   .action-btn:active { transform: scale(0.97); }
-  .action-icon { font-size: 24px; line-height: 1; }
-  .action-text { font-size: 13px; line-height: 1.2; }
+  .action-icon { font-size: 18px; line-height: 1; }
+  .action-text { font-size: 11px; line-height: 1.15; }
 
   .action-btn.wa-action {
     background: rgba(34,197,94,0.12); border: 1px solid rgba(34,197,94,0.3);
@@ -353,9 +353,9 @@ const styles = `
     animation: donateGradient 6s ease infinite, donateGlow 3s ease-in-out infinite;
   }
   .action-badge {
-    position: absolute; top: 6px; left: 50%; transform: translateX(-50%);
-    font-size: 7.5px; font-weight: 900; letter-spacing: 0.5px; white-space: nowrap;
-    background: rgba(0,0,0,0.3); color: #fff; padding: 2px 6px; border-radius: 6px;
+    position: absolute; top: 4px; left: 50%; transform: translateX(-50%);
+    font-size: 7px; font-weight: 900; letter-spacing: 0.4px; white-space: nowrap;
+    background: rgba(0,0,0,0.3); color: #fff; padding: 1px 5px; border-radius: 5px;
   }
   .action-btn.donate-action .action-text { margin-top: 4px; }
   .action-btn.donate-action .donate-chevron { font-size: 11px; }
@@ -1007,7 +1007,6 @@ export default function App() {
                 <div>
                   <div className="rate-name">{card.name}</div>
                   <div className="rate-subtitle">{card.subtitle}</div>
-                  <div className="source-tag">{card.src}</div>
                 </div>
               </div>
               <div className="rate-value">
