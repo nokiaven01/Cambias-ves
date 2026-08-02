@@ -305,19 +305,6 @@ const styles = `
     font-size: 11px; color: #94a3b8; pointer-events: none;
   }
 
-  /* Botón de intercambio central */
-  .bnc-swap-wrap { display: flex; justify-content: center; height: 0; position: relative; z-index: 3; }
-  .bnc-swap {
-    width: 40px; height: 40px; border-radius: 50%;
-    margin-top: -20px; margin-bottom: -20px;
-    background: linear-gradient(135deg, #eab308, #ca8a04); color: #0a0d12;
-    border: 3px solid #0a0d12; font-size: 17px; font-weight: 900;
-    cursor: pointer; transition: transform .18s ease;
-    display: flex; align-items: center; justify-content: center;
-    box-shadow: 0 2px 10px rgba(234,179,8,0.35);
-  }
-  .bnc-swap:active { transform: rotate(180deg) scale(0.9); }
-
   .bnc-rate-note {
     text-align: center; font-size: 11px; color: #64748b;
     font-family: 'JetBrains Mono', monospace; margin-top: 10px;
@@ -1066,17 +1053,6 @@ export default function App() {
                 </select>
                 <span className="bnc-select-arrow">▾</span>
               </div>
-            </div>
-
-            {/* Botón de intercambio */}
-            <div className="bnc-swap-wrap">
-              <button
-                className="bnc-swap"
-                onClick={() => { setFromCurrency(toCurrency); setToCurrency(fromCurrency); }}
-                title="Intercambiar monedas"
-              >
-                ⇅
-              </button>
             </div>
 
             {/* Fila 2 — RESULTADO + moneda de destino */}
