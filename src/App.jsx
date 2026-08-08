@@ -860,6 +860,14 @@ export default function App() {
     setAmount(veMontoFmt.format(numeroFlotante));
   };
 
+  /* Al elegir otro cuadro de moneda, se limpia el monto para escribir uno nuevo. */
+  const selectCur = (id) => {
+    setActiveCur(prev => {
+      if (prev !== id) setAmount("");
+      return id;
+    });
+  };
+
   /* Litros deseados: permite dígitos y un separador decimal (coma o punto). */
   const handleLitrosChange = (e) => {
     let v = e.target.value.replace(/[^\d.,]/g, "").replace(/,/g, ".");
@@ -1018,7 +1026,7 @@ export default function App() {
                 <div
                   key={c.id}
                   className={`cur-box ${isActive ? "active" : ""}`}
-                  onClick={() => setActiveCur(c.id)}
+                  onClick={() => selectCur(c.id)}
                 >
                   <div className="cur-box-head">
                     <span className="cur-box-icon">{c.icon}</span>
@@ -1030,7 +1038,7 @@ export default function App() {
                     inputMode="numeric"
                     placeholder="0,00"
                     value={curValues[c.id] || ""}
-                    onFocus={() => setActiveCur(c.id)}
+                    onFocus={() => selectCur(c.id)}
                     onChange={(e) => { setActiveCur(c.id); handleAmountChange(e); }}
                   />
                 </div>
