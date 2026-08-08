@@ -263,52 +263,33 @@ const styles = `
   }
   .toggle-btn:not(.active-bs):not(.active-usd):active { background: rgba(255,255,255,0.06); }
 
-  /* CONVERSOR ESTILO BNC — dos filas (monto arriba / resultado abajo) */
-  .bnc-conv { position: relative; margin-bottom: 14px; }
-  .bnc-row {
-    display: flex; align-items: center; gap: 12px;
+  /* CONVERSOR MULTI-MONEDA — 4 cuadros (Bs / USD / EUR / USDT) en 2x2 */
+  .cur-grid {
+    display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 14px;
+  }
+  .cur-box {
+    display: flex; flex-direction: column; justify-content: center; gap: 4px;
+    min-height: 62px; padding: 9px 12px;
     background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.1);
-    border-radius: 16px; padding: 14px 16px; transition: border-color .2s, background .2s;
+    border-radius: 13px; cursor: text; transition: border-color .2s, background .2s;
   }
-  .bnc-row + .bnc-row { margin-top: 10px; }
-  .bnc-row:focus-within { border-color: rgba(234,179,8,0.4); background: rgba(234,179,8,0.03); }
-  .bnc-row.result { background: rgba(234,179,8,0.06); border-color: rgba(234,179,8,0.22); }
-  .bnc-row-info { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 3px; }
-  .bnc-row-caption {
-    font-size: 10px; font-weight: 700; letter-spacing: 1px; text-transform: uppercase; color: #64748b;
+  .cur-box.active {
+    border-color: rgba(234,179,8,0.5); background: rgba(234,179,8,0.06);
+    box-shadow: 0 0 0 1px rgba(234,179,8,0.25);
   }
-  .bnc-amount-input {
-    background: none; border: none; outline: none; color: #f1f5f9;
-    font-family: 'JetBrains Mono', monospace; font-size: 22px; font-weight: 700;
-    width: 100%; padding: 0;
+  .cur-box-head { display: flex; align-items: center; gap: 6px; }
+  .cur-box-icon { font-size: 14px; line-height: 1; }
+  .cur-box-label {
+    font-size: 11px; font-weight: 800; letter-spacing: 0.5px; color: #94a3b8;
   }
-  .bnc-amount-input::placeholder { color: #334155; }
-  .bnc-result-value {
-    font-family: 'JetBrains Mono', monospace; font-size: 22px; font-weight: 700;
-    color: #eab308; word-break: break-all; line-height: 1.2;
+  .cur-box.active .cur-box-label { color: #eab308; }
+  .cur-box-input {
+    background: none; border: none; outline: none; width: 100%; padding: 0;
+    color: #f1f5f9; font-family: 'JetBrains Mono', monospace;
+    font-size: 17px; font-weight: 700;
   }
-  .bnc-result-value.empty { color: #475569; font-size: 16px; }
-
-  /* Selector de moneda (dropdown nativo estilizado) */
-  .bnc-cur-select { position: relative; flex-shrink: 0; }
-  .bnc-select {
-    -webkit-appearance: none; -moz-appearance: none; appearance: none;
-    background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.12);
-    border-radius: 12px; padding: 10px 30px 10px 14px; cursor: pointer;
-    color: #f1f5f9; font-family: 'Exo 2', sans-serif; font-size: 14px; font-weight: 700;
-    outline: none; transition: all .15s ease;
-  }
-  .bnc-select:focus { border-color: rgba(234,179,8,0.5); }
-  .bnc-select option { background: #131820; color: #f1f5f9; }
-  .bnc-select-arrow {
-    position: absolute; right: 11px; top: 50%; transform: translateY(-50%);
-    font-size: 11px; color: #94a3b8; pointer-events: none;
-  }
-
-  .bnc-rate-note {
-    text-align: center; font-size: 11px; color: #64748b;
-    font-family: 'JetBrains Mono', monospace; margin-top: 10px;
-  }
+  .cur-box.active .cur-box-input { color: #eab308; }
+  .cur-box-input::placeholder { color: #334155; }
 
   /* WA SEND BUTTON under calc */
   .wa-send-btn {
@@ -780,12 +761,16 @@ function lastUpdStr(ts) {
 }
 
 /* Build WhatsApp cotización message */
-function buildWaQuote(rates, amount, fromMeta, toMeta, convResult, today, pagoMovil, tasaPago) {
-  const num = parseFloat(amount) || 0;
+function buildWaQuote(rates, amountInBs, activeCur, today, pagoMovil, tasaPago) {
   let msg = `🇻🇪 *Cotizaciones BCV - ${today}*\n`;
-  if (num > 0 && convResult != null) {
-    msg += `\n💱 *Conversión:*\n`;
-    msg += `  ${fmtConv(num)} ${fromMeta.label} → *${fmtConv(convResult)} ${toMeta.label}*\n`;
+  if (amountInBs > 0) {
+    const activeMeta = CURRENCIES.find(c => c.id === activeCur) || CURRENCIES[0];
+    const activeVal = activeCur === "bs" ? amountInBs : amountInBs / rateToBs(activeCur, rates);
+    msg += `\n💱 *Conversión de ${fmtConv(activeVal)} ${activeMeta.label}:*\n`;
+    CURRENCIES.filter(c => c.id !== activeCur).forEach(c => {
+      const r = rateToBs(c.id, rates);
+      if (r) msg += `  → ${c.label}: *${fmtConv(amountInBs / r)}*\n`;
+    });
   }
   // Tasa elegida para realizar el pago
   if (tasaPago && rates[tasaPago] != null) {
@@ -821,9 +806,8 @@ export default function App() {
   const [fromApi, setFromApi]     = useState(false);
   const [lastUpdate, setLastUpdate] = useState(null);
   const [isOnline, setIsOnline]   = useState(typeof navigator !== "undefined" ? navigator.onLine : true);
-  const [fromCurrency, setFromCurrency] = useState("bs");  // moneda del monto ingresado
-  const [toCurrency, setToCurrency]     = useState("usd"); // moneda a la que se convierte
-  const [amount, setAmount]       = useState("");
+  const [activeCur, setActiveCur] = useState("bs"); // cuadro que el usuario está editando
+  const [amount, setAmount]       = useState("");    // monto escrito en el cuadro activo
   const [litros, setLitros]       = useState(""); // litros deseados para calcular costo
   const [modal, setModal]         = useState(null); // null | 'cotizacion'
   const [toast, setToast]         = useState(null);
@@ -911,23 +895,23 @@ export default function App() {
     return () => clearInterval(interval);
   }, [loadRates]);
 
-  /* Derived – calculadora convertible entre 4 monedas (Bs, USD, EUR, USDT) */
+  /* Derived – calculadora convertible entre 4 monedas (Bs, USD, EUR, USDT).
+     El usuario escribe en cualquiera de los 4 cuadros (activeCur) y los otros
+     se calculan automáticamente: monto activo → Bs → cada moneda. */
   const inputNum = parseFloat(cleanVEAmount(amount)) || 0;
+  const activeBsRate = rateToBs(activeCur, rates);
+  const amountInBs = inputNum && activeBsRate ? inputNum * activeBsRate : 0;
 
-  const fromMeta = CURRENCIES.find(c => c.id === fromCurrency) || CURRENCIES[0];
-  const toMeta   = CURRENCIES.find(c => c.id === toCurrency)   || CURRENCIES[1];
-
-  // Conversión automática: origen → Bs → destino
-  const fromBsRate = rateToBs(fromCurrency, rates);
-  const toBsRate   = rateToBs(toCurrency, rates);
-  const convResult =
-    inputNum && fromBsRate && toBsRate
-      ? (inputNum * fromBsRate) / toBsRate
-      : null;
-
-  // Tasa efectiva (1 unidad origen = X unidades destino)
-  const effectiveRate =
-    fromBsRate && toBsRate ? fromBsRate / toBsRate : null;
+  // Valor mostrado en cada cuadro
+  const curValues = {};
+  CURRENCIES.forEach(c => {
+    if (c.id === activeCur) {
+      curValues[c.id] = amount; // el cuadro activo muestra lo que el usuario escribe
+    } else {
+      const r = rateToBs(c.id, rates);
+      curValues[c.id] = amountInBs && r ? fmtConv(amountInBs / r) : "";
+    }
+  });
 
   // Precios de gasolina Venezuela 2026 (Bs/litro usando tasa BCV)
   const FUEL = [
@@ -960,7 +944,7 @@ export default function App() {
   // Confirma y envía la cotización por WhatsApp (con o sin datos de Pago Móvil)
   const confirmWaCotizacion = () => {
     const pm = incluirPago ? pagoMovil : null;
-    const msg = buildWaQuote(rates, inputNum, fromMeta, toMeta, convResult, today, pm, tasaPago);
+    const msg = buildWaQuote(rates, amountInBs, activeCur, today, pm, tasaPago);
     window.open(`https://wa.me/?text=${encodeURIComponent(msg)}`, "_blank");
     setModal(null);
   };
@@ -1025,65 +1009,33 @@ export default function App() {
         <div className="calculator">
           <div className="calc-title">⇄ Calculadora Convertible</div>
 
-          {/* Conversor estilo BNC: dos filas (monto arriba, resultado abajo) */}
-          <div className="bnc-conv">
-
-            {/* Fila 1 — MONTO (editable) + moneda de origen */}
-            <div className="bnc-row">
-              <div className="bnc-row-info">
-                <span className="bnc-row-caption">Monto</span>
-                <input
-                  className="bnc-amount-input"
-                  type="text" inputMode="numeric"
-                  placeholder="0,00"
-                  value={amount}
-                  onChange={handleAmountChange}
-                />
-              </div>
-              <div className="bnc-cur-select">
-                <select
-                  className="bnc-select"
-                  value={fromCurrency}
-                  onChange={(e) => setFromCurrency(e.target.value)}
+          {/* Conversor multi-moneda: 4 cuadros (Bs, USD, EUR, USDT).
+              Escribe en cualquiera y los otros se calculan automáticamente. */}
+          <div className="cur-grid">
+            {CURRENCIES.map(c => {
+              const isActive = c.id === activeCur;
+              return (
+                <div
+                  key={c.id}
+                  className={`cur-box ${isActive ? "active" : ""}`}
+                  onClick={() => setActiveCur(c.id)}
                 >
-                  {CURRENCIES.map(c => (
-                    <option key={`from-${c.id}`} value={c.id}>{c.icon} {c.label}</option>
-                  ))}
-                </select>
-                <span className="bnc-select-arrow">▾</span>
-              </div>
-            </div>
-
-            {/* Fila 2 — RESULTADO + moneda de destino */}
-            <div className="bnc-row result">
-              <div className="bnc-row-info">
-                <span className="bnc-row-caption">Recibes</span>
-                <div className={`bnc-result-value ${convResult == null ? "empty" : ""}`}>
-                  {convResult != null
-                    ? fmtConv(convResult)
-                    : fromCurrency === toCurrency ? "Elige otra moneda" : "0,00"}
+                  <div className="cur-box-head">
+                    <span className="cur-box-icon">{c.icon}</span>
+                    <span className="cur-box-label">{c.label}</span>
+                  </div>
+                  <input
+                    className="cur-box-input"
+                    type="text"
+                    inputMode="numeric"
+                    placeholder="0,00"
+                    value={curValues[c.id] || ""}
+                    onFocus={() => setActiveCur(c.id)}
+                    onChange={(e) => { setActiveCur(c.id); handleAmountChange(e); }}
+                  />
                 </div>
-              </div>
-              <div className="bnc-cur-select">
-                <select
-                  className="bnc-select"
-                  value={toCurrency}
-                  onChange={(e) => setToCurrency(e.target.value)}
-                >
-                  {CURRENCIES.map(c => (
-                    <option key={`to-${c.id}`} value={c.id}>{c.icon} {c.label}</option>
-                  ))}
-                </select>
-                <span className="bnc-select-arrow">▾</span>
-              </div>
-            </div>
-
-            {/* Tasa efectiva */}
-            {effectiveRate != null && fromCurrency !== toCurrency && (
-              <div className="bnc-rate-note">
-                1 {fromMeta.label} = {fmtConv(effectiveRate)} {toMeta.label}
-              </div>
-            )}
+              );
+            })}
           </div>
 
           {/* Results grid — calculadora de gasolina */}
