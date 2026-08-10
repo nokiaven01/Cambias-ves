@@ -135,7 +135,7 @@ const styles = `
   .rate-left { display:flex; align-items:center; gap:9px; }
   .rate-icon { width:30px; height:30px; border-radius:9px; display:flex; align-items:center; justify-content:center; font-size:14px; flex-shrink:0; }
   .rate-icon-img { width:22px; height:22px; object-fit:contain; display:block; }
-  .rate-icon.bcv          { background:rgba(59,130,246,0.15); }
+  .rate-icon.bcv          { background:#ffffff; padding:4px; }
   .rate-icon.euro         { background:rgba(139,92,246,0.15); }
   .rate-icon.usdt         { background:rgba(16,185,129,0.15); }
   .rate-name { font-size:12.5px; font-weight:700; color:#f1f5f9; line-height:1.15; }
