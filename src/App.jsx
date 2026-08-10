@@ -210,9 +210,10 @@ const styles = `
   }
   .fuel-icon {
     width: 28px; height: 28px; border-radius: 8px;
-    background: rgba(249,115,22,0.15); display: flex; align-items: center;
-    justify-content: center; font-size: 15px; flex-shrink: 0;
+    background: #ffffff; padding: 3px; display: flex; align-items: center;
+    justify-content: center; font-size: 15px; flex-shrink: 0; overflow: hidden;
   }
+  .fuel-icon-img { width: 100%; height: 100%; object-fit: contain; display: block; }
   .fuel-title { font-size: 12px; font-weight: 700; color: #f1f5f9; }
   .fuel-subtitle { font-size: 10px; color: #64748b; margin-top: 1px; }
   .fuel-rows { display: flex; flex-direction: column; gap: 6px; }
@@ -1063,7 +1064,15 @@ export default function App() {
             {/* ⛽ CALCULADORA DE GASOLINA — ubicada debajo de EURO BCV y USDT */}
             <div className="fuel-card">
               <div className="fuel-header">
-                <div className="fuel-icon">⛽</div>
+                <div className="fuel-icon">
+                  <img
+                    src="https://commons.wikimedia.org/wiki/Special:FilePath/PDVSA_logo.svg?width=120"
+                    alt="PDVSA"
+                    className="fuel-icon-img"
+                    loading="lazy"
+                    onError={(e) => { e.currentTarget.style.display = "none"; e.currentTarget.parentNode.textContent = "⛽"; }}
+                  />
+                </div>
                 <div>
                   <div className="fuel-title">Gasolina · Costo por litros</div>
                   <div className="fuel-subtitle">Tasa BCV · Precios PDVSA 2026</div>
