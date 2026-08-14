@@ -976,7 +976,7 @@ export default function App() {
           <div className="header-top">
             <div style={{display:"flex",alignItems:"center",gap:10}}>
               <div className="flag-accent">
-                <div className="flag-bar red"/><div className="flag-bar yellow"/><div className="flag-bar blue"/>
+                <div className="flag-bar yellow"/><div className="flag-bar blue"/><div className="flag-bar red"/>
               </div>
               <div className="header-title">Cambio <span>VES</span></div>
             </div>
