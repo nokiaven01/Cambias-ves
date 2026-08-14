@@ -1262,7 +1262,7 @@ export default function App() {
               <div
                 key={c.id}
                 className={`cochina-cur ${cochinaCur === c.id ? "active" : ""}`}
-                onClick={() => setCochinaCur(c.id)}
+                onClick={() => { if (c.id === "bs") setCochinaMonto(""); setCochinaCur(c.id); }}
               >
                 <div className="cochina-cur-flag">
                   {c.img
