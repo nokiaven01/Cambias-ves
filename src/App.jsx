@@ -17,6 +17,13 @@ const CURRENCIES = [
   { id: "usdt", label: "USDT", symbol: "₮",  icon: "₮",  full: "Tether USDT" },
 ];
 
+/* ─── MONEDAS DE "LA COCHINA" (dividir cuenta) — con imágenes ───────────── */
+const COCHINA_CURRENCIES = [
+  { id: "bs",  label: "Bs",  icon: "🇻🇪", img: "https://commons.wikimedia.org/wiki/Special:FilePath/Flag_of_Venezuela.svg?width=80" },
+  { id: "usd", label: "USD", icon: "💵", img: "https://commons.wikimedia.org/wiki/Special:FilePath/United-states_flag_icon_round.svg?width=80" },
+  { id: "eur", label: "EUR", icon: "💶", img: "https://commons.wikimedia.org/wiki/Special:FilePath/Euro_symbol.svg?width=80" },
+];
+
 /* Valor en Bolívares de 1 unidad de la moneda indicada, según las tasas actuales. */
 function rateToBs(id, rates) {
   switch (id) {
@@ -151,6 +158,13 @@ const styles = `
     border-radius:4px; padding:1px 4px; margin-top:2px;
     font-family:'JetBrains Mono',monospace; letter-spacing:.5px;
   }
+
+  /* Euro + USDT lado a lado */
+  .rates-row { display:grid; grid-template-columns:1fr 1fr; gap:7px; }
+  .rate-card.half { flex-direction:column; align-items:flex-start; gap:8px; }
+  .rate-card.half .rate-left { gap:8px; }
+  .rate-card.half .rate-value { text-align:left; align-self:stretch; }
+  .rate-card.half .rate-amount, .rate-card.half .rate-unit { text-align:left; }
 
   /* DIVIDER */
   .divider { height:1px; background:rgba(255,255,255,0.05); margin:16px 20px; position:relative; z-index:1; }
@@ -292,6 +306,67 @@ const styles = `
   }
   .cur-box.active .cur-box-input { color: #eab308; }
   .cur-box-input::placeholder { color: #334155; }
+
+  /* ─── LA COCHINA · dividir la cuenta ─────────────────────────────── */
+  .cochina-intro { font-size:11.5px; color:#94a3b8; line-height:1.5; margin-bottom:14px; }
+  .cochina-curs { display:grid; grid-template-columns:1fr 1fr 1fr; gap:8px; margin-bottom:14px; }
+  .cochina-cur {
+    display:flex; flex-direction:column; align-items:center; gap:6px;
+    padding:11px 6px; border-radius:13px; cursor:pointer; user-select:none;
+    background:rgba(255,255,255,0.04); border:1px solid rgba(255,255,255,0.1);
+    transition:all .18s; font-family:'Exo 2',sans-serif;
+  }
+  .cochina-cur:active { transform:scale(0.97); }
+  .cochina-cur.active { border-color:rgba(236,72,153,0.55); background:rgba(236,72,153,0.08); box-shadow:0 0 0 1px rgba(236,72,153,0.3); }
+  .cochina-cur-flag {
+    width:34px; height:34px; border-radius:8px; overflow:hidden;
+    display:flex; align-items:center; justify-content:center; font-size:20px;
+    background:rgba(255,255,255,0.06);
+  }
+  .cochina-cur-flag img { width:100%; height:100%; object-fit:cover; display:block; }
+  .cochina-cur-label { font-size:12px; font-weight:800; color:#94a3b8; letter-spacing:0.3px; }
+  .cochina-cur.active .cochina-cur-label { color:#f472b6; }
+
+  .cochina-people {
+    display:flex; align-items:center; justify-content:space-between; gap:10px;
+    background:rgba(255,255,255,0.04); border:1px solid rgba(255,255,255,0.1);
+    border-radius:14px; padding:12px 14px; margin-bottom:14px;
+  }
+  .cochina-people-label { font-size:12.5px; font-weight:700; color:#e2e8f0; display:flex; align-items:center; gap:7px; }
+  .cochina-people-hint { font-size:9.5px; color:#64748b; margin-top:1px; }
+  .cochina-stepper { display:flex; align-items:center; gap:10px; }
+  .cochina-step-btn {
+    width:34px; height:34px; border-radius:10px; flex-shrink:0;
+    background:rgba(236,72,153,0.12); border:1px solid rgba(236,72,153,0.3);
+    color:#f472b6; font-size:20px; font-weight:800; line-height:1; cursor:pointer;
+    display:flex; align-items:center; justify-content:center; transition:all .15s;
+    font-family:'Exo 2',sans-serif; user-select:none;
+  }
+  .cochina-step-btn:active { transform:scale(0.9); background:rgba(236,72,153,0.22); }
+  .cochina-step-btn:disabled { opacity:0.35; cursor:default; }
+  .cochina-people-count { font-family:'JetBrains Mono',monospace; font-size:22px; font-weight:700; color:#f1f5f9; min-width:34px; text-align:center; }
+
+  .cochina-result {
+    background:rgba(236,72,153,0.06); border:1px solid rgba(236,72,153,0.2);
+    border-radius:16px; padding:14px; margin-bottom:10px; position:relative; overflow:hidden;
+  }
+  .cochina-result::before {
+    content:''; position:absolute; top:0; left:0; right:0; height:2px;
+    background:linear-gradient(90deg,#ec4899,#f97316,#eab308);
+  }
+  .cochina-result-title { font-size:10px; font-weight:800; letter-spacing:1px; text-transform:uppercase; color:#f472b6; margin-bottom:10px; text-align:center; }
+  .cochina-per-grid { display:grid; grid-template-columns:1fr 1fr 1fr; gap:8px; }
+  .cochina-per-card { background:rgba(0,0,0,0.22); border-radius:11px; padding:9px 7px; text-align:center; }
+  .cochina-per-cur { font-size:9.5px; font-weight:700; color:#64748b; letter-spacing:0.5px; margin-bottom:3px; }
+  .cochina-per-val { font-family:'JetBrains Mono',monospace; font-size:13px; font-weight:700; color:#f1f5f9; word-break:break-all; line-height:1.2; }
+  .cochina-per-val.empty { color:#334155; }
+  .cochina-total {
+    display:flex; align-items:center; justify-content:space-between;
+    font-size:11px; color:#94a3b8; font-family:'JetBrains Mono',monospace;
+    background:rgba(255,255,255,0.03); border:1px solid rgba(255,255,255,0.07);
+    border-radius:11px; padding:9px 13px;
+  }
+  .cochina-total b { color:#eab308; font-weight:700; }
 
   /* WA SEND BUTTON under calc */
   .wa-send-btn {
@@ -811,6 +886,9 @@ export default function App() {
   const [activeCur, setActiveCur] = useState("bs"); // cuadro que el usuario está editando
   const [amount, setAmount]       = useState("");    // monto escrito en el cuadro activo
   const [litros, setLitros]       = useState(""); // litros deseados para calcular costo
+  const [cochinaCur, setCochinaCur]   = useState("bs");  // moneda del monto de La Cochina
+  const [cochinaMonto, setCochinaMonto] = useState("");  // monto total a dividir
+  const [cochinaGente, setCochinaGente] = useState(2);   // cantidad de personas (1-20)
   const [modal, setModal]         = useState(null); // null | 'cotizacion'
   const [toast, setToast]         = useState(null);
   const [showDonate, setShowDonate] = useState(false);
@@ -868,6 +946,14 @@ export default function App() {
       if (prev !== id) setAmount("");
       return id;
     });
+  };
+
+  /* La Cochina: monto total estilo "centavos" (mismos que la calculadora). */
+  const handleCochinaMonto = (e) => {
+    const soloNumeros = e.target.value.replace(/\D/g, "");
+    if (!soloNumeros) { setCochinaMonto(""); return; }
+    const numeroFlotante = parseInt(soloNumeros, 10) / 100;
+    setCochinaMonto(veMontoFmt.format(numeroFlotante));
   };
 
   /* Litros deseados: permite dígitos y un separador decimal (coma o punto). */
@@ -939,6 +1025,18 @@ export default function App() {
     ? FUEL.map(f => ({ ...f, costBs: litrosNum * f.priceBs, costUSD: litrosNum * f.priceUSD }))
     : null;
 
+  /* ── LA COCHINA — dividir el monto en partes iguales y convertir a Bs/USD/EUR ── */
+  const cochinaNum   = parseFloat(cleanVEAmount(cochinaMonto)) || 0;   // monto en la moneda elegida
+  const cochinaBsRate = rateToBs(cochinaCur, rates);
+  const cochinaTotalBs = cochinaNum && cochinaBsRate ? cochinaNum * cochinaBsRate : 0; // total en Bs
+  const cochinaPorPersonaBs = cochinaTotalBs && cochinaGente > 0 ? cochinaTotalBs / cochinaGente : 0;
+  // Valor por persona en cada moneda
+  const cochinaPer = {};   // { bs, usd, eur }
+  COCHINA_CURRENCIES.forEach(c => {
+    const r = rateToBs(c.id, rates);
+    cochinaPer[c.id] = cochinaPorPersonaBs && r ? cochinaPorPersonaBs / r : 0;
+  });
+
   const today = todayStr();
 
   const rateCards = [
@@ -994,7 +1092,8 @@ export default function App() {
         {/* RATES */}
         <div className="section-label">Cotizaciones del día</div>
         <div className="rates-grid">
-          {rateCards.map(card => (
+          {/* Dólar BCV — ancho completo */}
+          {rateCards.filter(c => c.id === "bcv").map(card => (
             <div key={card.id} className={`rate-card ${card.id}`}>
               <div className="rate-left">
                 <div className={`rate-icon ${card.id}`}>
@@ -1021,6 +1120,37 @@ export default function App() {
               </div>
             </div>
           ))}
+
+          {/* Euro BCV + USDT — una al lado de la otra */}
+          <div className="rates-row">
+            {rateCards.filter(c => c.id === "euro" || c.id === "usdt").map(card => (
+              <div key={card.id} className={`rate-card half ${card.id}`}>
+                <div className="rate-left">
+                  <div className={`rate-icon ${card.id}`}>
+                    {card.img
+                      ? <img
+                          src={card.img}
+                          alt={card.name}
+                          className="rate-icon-img"
+                          loading="lazy"
+                          onError={(e) => { e.currentTarget.style.display = "none"; e.currentTarget.parentNode.textContent = card.icon; }}
+                        />
+                      : card.icon}
+                  </div>
+                  <div>
+                    <div className="rate-name">{card.name}</div>
+                    <div className="rate-subtitle">{card.subtitle}</div>
+                  </div>
+                </div>
+                <div className="rate-value">
+                  <div className={`rate-amount ${loading?"loading-text":""}`}>
+                    {loading ? "···" : fmt(card.value)}
+                  </div>
+                  <div className="rate-unit">{card.unit}</div>
+                </div>
+              </div>
+            ))}
+          </div>
         </div>
 
         <div className="divider"/>
@@ -1116,6 +1246,94 @@ export default function App() {
                 </div>
               </div>
             </div>
+          </div>
+
+          {/* ── 🐷 LA COCHINA — dividir la cuenta entre varias personas ── */}
+          <div className="divider" style={{margin:"18px 0"}}/>
+          <div className="calc-title">🐷 La Cochina · Dividir la cuenta</div>
+          <div className="cochina-intro">
+            ¿Salida o compra entre varios? Escribe el monto total, elige la moneda
+            y en cuántas personas dividirlo. Te mostramos cuánto paga cada quien.
+          </div>
+
+          {/* Selector de moneda con imágenes */}
+          <div className="cochina-curs">
+            {COCHINA_CURRENCIES.map(c => (
+              <div
+                key={c.id}
+                className={`cochina-cur ${cochinaCur === c.id ? "active" : ""}`}
+                onClick={() => setCochinaCur(c.id)}
+              >
+                <div className="cochina-cur-flag">
+                  {c.img
+                    ? <img
+                        src={c.img}
+                        alt={c.label}
+                        loading="lazy"
+                        onError={(e) => { e.currentTarget.style.display = "none"; e.currentTarget.parentNode.textContent = c.icon; }}
+                      />
+                    : c.icon}
+                </div>
+                <div className="cochina-cur-label">{c.label}</div>
+              </div>
+            ))}
+          </div>
+
+          {/* Monto total */}
+          <div className="input-wrapper">
+            <span className="input-label">
+              {COCHINA_CURRENCIES.find(c => c.id === cochinaCur)?.label}
+            </span>
+            <input
+              className="bs-input"
+              type="text"
+              inputMode="numeric"
+              placeholder="0,00"
+              value={cochinaMonto}
+              onChange={handleCochinaMonto}
+            />
+          </div>
+
+          {/* Cantidad de personas (1 a 20) */}
+          <div className="cochina-people">
+            <div>
+              <div className="cochina-people-label">👥 Personas</div>
+              <div className="cochina-people-hint">Máximo 20</div>
+            </div>
+            <div className="cochina-stepper">
+              <button
+                className="cochina-step-btn"
+                onClick={() => setCochinaGente(n => Math.max(1, n - 1))}
+                disabled={cochinaGente <= 1}
+              >−</button>
+              <span className="cochina-people-count">{cochinaGente}</span>
+              <button
+                className="cochina-step-btn"
+                onClick={() => setCochinaGente(n => Math.min(20, n + 1))}
+                disabled={cochinaGente >= 20}
+              >+</button>
+            </div>
+          </div>
+
+          {/* Resultado: cuánto paga cada persona en cada moneda */}
+          <div className="cochina-result">
+            <div className="cochina-result-title">Paga cada persona</div>
+            <div className="cochina-per-grid">
+              {COCHINA_CURRENCIES.map(c => (
+                <div className="cochina-per-card" key={c.id}>
+                  <div className="cochina-per-cur">{c.label}</div>
+                  <div className={`cochina-per-val ${!cochinaPer[c.id] ? "empty" : ""}`}>
+                    {cochinaPer[c.id] ? fmtConv(cochinaPer[c.id]) : "—"}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Total */}
+          <div className="cochina-total">
+            <span>Total ({COCHINA_CURRENCIES.find(c => c.id === cochinaCur)?.label})</span>
+            <span><b>{cochinaNum ? fmtConv(cochinaNum) : "—"}</b> ÷ {cochinaGente}</span>
           </div>
 
           {/* Acciones lado a lado: Pago/Cobro vía WhatsApp + Apoya este proyecto */}
