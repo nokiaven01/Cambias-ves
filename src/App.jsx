@@ -163,8 +163,8 @@ const styles = `
   .rates-row { display:grid; grid-template-columns:1fr 1fr; gap:7px; }
   .rate-card.half { flex-direction:column; align-items:flex-start; gap:8px; }
   .rate-card.half .rate-left { gap:8px; }
-  .rate-card.half .rate-value { text-align:left; align-self:stretch; }
-  .rate-card.half .rate-amount, .rate-card.half .rate-unit { text-align:left; }
+  .rate-card.half .rate-value { text-align:right; align-self:stretch; }
+  .rate-card.half .rate-amount, .rate-card.half .rate-unit { text-align:right; }
 
   /* DIVIDER */
   .divider { height:1px; background:rgba(255,255,255,0.05); margin:16px 20px; position:relative; z-index:1; }
@@ -319,8 +319,8 @@ const styles = `
   .cochina-cur:active { transform:scale(0.97); }
   .cochina-cur.active { border-color:rgba(236,72,153,0.55); background:rgba(236,72,153,0.08); box-shadow:0 0 0 1px rgba(236,72,153,0.3); }
   .cochina-cur-flag {
-    width:34px; height:34px; border-radius:8px; overflow:hidden;
-    display:flex; align-items:center; justify-content:center; font-size:20px;
+    width:26px; height:26px; border-radius:7px; overflow:hidden;
+    display:flex; align-items:center; justify-content:center; font-size:15px;
     background:rgba(255,255,255,0.06);
   }
   .cochina-cur-flag img { width:100%; height:100%; object-fit:cover; display:block; }
@@ -1328,12 +1328,6 @@ export default function App() {
                 </div>
               ))}
             </div>
-          </div>
-
-          {/* Total */}
-          <div className="cochina-total">
-            <span>Total ({COCHINA_CURRENCIES.find(c => c.id === cochinaCur)?.label})</span>
-            <span><b>{cochinaNum ? fmtConv(cochinaNum) : "—"}</b> ÷ {cochinaGente}</span>
           </div>
 
           {/* Acciones lado a lado: Pago/Cobro vía WhatsApp + Apoya este proyecto */}
