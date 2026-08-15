@@ -872,7 +872,7 @@ function buildWaQuote(rates, amountInBs, activeCur, today, pagoMovil, tasaPago) 
       pmRows.forEach(r => { msg += `${r.label}: *${String(r.value).trim()}*\n`; });
     }
   }
-  msg += `\n_Cambio VES · Sincronización vía API_`;
+  msg += `\n_Cambio VE · Sincronización vía API_`;
   return msg;
 }
 
@@ -1076,7 +1076,7 @@ export default function App() {
               <div className="flag-accent">
                 <div className="flag-bar yellow"/><div className="flag-bar blue"/><div className="flag-bar red"/>
               </div>
-              <div className="header-title">Cambio <span>VES</span></div>
+              <div className="header-title">Cambio <span>VE</span></div>
             </div>
             <div className={`sync-badge ${!isOnline?"offline":""}`} onClick={() => loadRates(true)}>
               <div className={`sync-dot ${loading?"loading":!isOnline?"offline-dot":""}`}/>
