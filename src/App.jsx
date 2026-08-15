@@ -323,20 +323,20 @@ const styles = `
   .cochina-intro { font-size:11.5px; color:#94a3b8; line-height:1.5; margin-bottom:14px; }
   .cochina-curs { display:grid; grid-template-columns:1fr 1fr 1fr; gap:8px; margin-bottom:14px; }
   .cochina-cur {
-    display:flex; flex-direction:column; align-items:center; gap:6px;
-    padding:11px 6px; border-radius:13px; cursor:pointer; user-select:none;
+    display:flex; flex-direction:column; align-items:center; gap:4px;
+    padding:7px 5px; border-radius:11px; cursor:pointer; user-select:none;
     background:rgba(255,255,255,0.04); border:1px solid rgba(255,255,255,0.1);
     transition:all .18s; font-family:'Exo 2',sans-serif;
   }
   .cochina-cur:active { transform:scale(0.97); }
   .cochina-cur.active { border-color:rgba(236,72,153,0.55); background:rgba(236,72,153,0.08); box-shadow:0 0 0 1px rgba(236,72,153,0.3); }
   .cochina-cur-flag {
-    width:26px; height:26px; border-radius:7px; overflow:hidden;
-    display:flex; align-items:center; justify-content:center; font-size:15px;
+    width:20px; height:20px; border-radius:6px; overflow:hidden;
+    display:flex; align-items:center; justify-content:center; font-size:12px;
     background:rgba(255,255,255,0.06);
   }
   .cochina-cur-flag img { width:100%; height:100%; object-fit:cover; display:block; }
-  .cochina-cur-label { font-size:12px; font-weight:800; color:#94a3b8; letter-spacing:0.3px; }
+  .cochina-cur-label { font-size:11px; font-weight:800; color:#94a3b8; letter-spacing:0.3px; }
   .cochina-cur.active .cochina-cur-label { color:#f472b6; }
 
   .cochina-people {
