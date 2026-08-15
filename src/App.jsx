@@ -168,8 +168,13 @@ const styles = `
 
   /* Euro + USDT lado a lado */
   .rates-row { display:grid; grid-template-columns:1fr 1fr; gap:7px; }
-  .rate-card.half { flex-direction:column; align-items:flex-start; gap:8px; }
-  .rate-card.half .rate-left { gap:8px; }
+  .rate-card.half { flex-direction:column; align-items:flex-start; gap:6px; padding:7px 10px; }
+  .rate-card.half .rate-left { gap:7px; }
+  .rate-card.half .rate-icon { width:26px; height:26px; border-radius:8px; }
+  .rate-card.half .rate-icon-img { width:18px; height:18px; }
+  .rate-card.half .rate-name { font-size:11.5px; }
+  .rate-card.half .rate-subtitle { font-size:9px; }
+  .rate-card.half .rate-amount { font-size:12.5px; }
   .rate-card.half .rate-value { text-align:right; align-self:stretch; }
   .rate-card.half .rate-amount, .rate-card.half .rate-unit { text-align:right; }
 
