@@ -1250,7 +1250,7 @@ export default function App() {
 
           {/* ── 🐷 LA COCHINA — dividir la cuenta entre varias personas ── */}
           <div className="divider" style={{margin:"18px 0"}}/>
-          <div className="calc-title">🐷 La Cochina · Dividir la cuenta</div>
+          <div className="calc-title" style={{color:"#f1f5f9"}}>🐷 La Cochina · Dividir la cuenta 🐷</div>
           <div className="cochina-intro">
             ¿Salida o compra entre varios? Escribe el monto total, elige la moneda
             y en cuántas personas dividirlo. Te mostramos cuánto paga cada quien.
