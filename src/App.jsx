@@ -105,7 +105,14 @@ const styles = `
   .flag-bar.yellow{ background:#eab308; width:6px; }
   .flag-bar.blue  { background:#1e40af; width:6px; }
   .header-title { font-size:22px; font-weight:900; letter-spacing:-0.5px; color:#f1f5f9; }
-  .header-title span { color:#eab308; }
+  .header-title span {
+    background:linear-gradient(to bottom,
+      #eab308 0%, #eab308 33.33%,
+      #1e40af 33.33%, #1e40af 66.66%,
+      #cf3030 66.66%, #cf3030 100%);
+    -webkit-background-clip:text; background-clip:text;
+    -webkit-text-fill-color:transparent; color:transparent;
+  }
   .sync-badge {
     display:flex; align-items:center; gap:5px;
     background:rgba(34,197,94,0.1); border:1px solid rgba(34,197,94,0.2);
