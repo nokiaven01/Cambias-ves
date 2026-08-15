@@ -9,8 +9,8 @@ export default defineConfig({
       registerType: 'autoUpdate',
       includeAssets: ['icons/*.png', 'icons/*.svg'],
       manifest: {
-        name: 'Cambio VES – Tasas BCV Venezuela',
-        short_name: 'Cambio VES',
+        name: 'Cambio VE – Tasas BCV Venezuela',
+        short_name: 'Cambio VE',
         description: 'Tasas de cambio BCV en tiempo real: Dólar, Euro, USDT e Intervención Digital. Calculadora de bolívares.',
         theme_color: '#0a0d12',
         background_color: '#0a0d12',
