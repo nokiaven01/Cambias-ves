@@ -862,17 +862,24 @@ export default function App() {
     toastTimer.current = setTimeout(() => setToast(null), 2200);
   };
 
-  /* 
-   * Mantiene el formato natural (estilo centavos) pero permite 
-   * conservar símbolos matemáticos en el mismo input. 
-   */
   const veMontoFmt = new Intl.NumberFormat("es-VE", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
   
   const handleAmountChange = (e) => {
-    const raw = e.target.value;
-    const withoutSpaces = raw.replace(/\s+/g, "");
-    const parts = withoutSpaces.split(/([+\-*/]+)/);
+    let raw = e.target.value.replace(/\s+/g, "");
     
+    // Auto-resolver: si el usuario ingresa un operador (+, -, *, /) y ya había números
+    // evaluamos automáticamente lo anterior para mostrar siempre el monto total acumulado.
+    if (/[+\-*/]$/.test(raw) && raw.length > 1) {
+      const op = raw.slice(-1);
+      const expr = raw.slice(0, -1);
+      // Solo evaluar si la expresión antes del operador no termina ya en otro operador
+      if (!/[+\-*/]$/.test(expr)) {
+        const evaluated = safeEvaluate(expr);
+        raw = veMontoFmt.format(evaluated) + op;
+      }
+    }
+
+    const parts = raw.split(/([+\-*/]+)/);
     let newAmount = "";
     parts.forEach(part => {
       if (/^[+\-*/]+$/.test(part)) {
@@ -942,7 +949,6 @@ export default function App() {
     }
   });
 
-  /* Mantiene la limpieza de la memoria al cambiar de moneda */
   const selectCur = (id) => {
     setActiveCur(prev => {
       if (prev !== id) setAmount("");
@@ -1116,6 +1122,13 @@ export default function App() {
                     placeholder="0,00"
                     value={curValues[c.id] || ""}
                     onFocus={() => selectCur(c.id)}
+                    onBlur={() => {
+                      // Al quitar el foco limpiamos y dejamos solo el total si no hay operador pendiente
+                      if (amount && !/[+\-*/]$/.test(amount)) {
+                        const total = safeEvaluate(amount);
+                        setAmount(veMontoFmt.format(total));
+                      }
+                    }}
                     onChange={(e) => handleAmountChange(e)}
                   />
                   
@@ -1127,9 +1140,13 @@ export default function App() {
                       e.preventDefault(); // Evita que el input pierda el foco en el toque
                       e.stopPropagation();
                       let newVal = amount || "0,00";
+                      
+                      // Si no termina en un operador matemático, evaluamos el total acumulado y agregamos "+"
                       if (!/[+\-*/]$/.test(newVal)) {
-                        setAmount(newVal + "+");
+                        const total = safeEvaluate(newVal);
+                        setAmount(veMontoFmt.format(total) + "+");
                       }
+                      
                       setTimeout(() => inputRefs.current[c.id]?.focus(), 0);
                     }}
                   >
