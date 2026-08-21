@@ -159,12 +159,6 @@ const styles = `
   .rate-amount.loading-text { color:#475569; font-size:12px; animation:shimmer 1.5s infinite; }
   @keyframes shimmer { 0%,100%{opacity:.4} 50%{opacity:1} }
   .rate-unit { font-size:9px; color:#64748b; text-align:right; font-family:'JetBrains Mono',monospace; }
-  .source-tag {
-    display:inline-block; font-size:8px; color:#4ade80;
-    background:rgba(34,197,94,0.08); border:1px solid rgba(34,197,94,0.15);
-    border-radius:4px; padding:1px 4px; margin-top:2px;
-    font-family:'JetBrains Mono',monospace; letter-spacing:.5px;
-  }
 
   /* Euro + USDT lado a lado */
   .rates-row { display:grid; grid-template-columns:1fr 1fr; gap:7px; }
@@ -184,35 +178,6 @@ const styles = `
   /* CALCULATOR */
   .calculator { padding:0 16px; position:relative; z-index:1; flex:1; }
   .calc-title { font-size:10px; font-weight:700; letter-spacing:2px; text-transform:uppercase; color:#475569; margin-bottom:12px; }
-  .input-wrapper {
-    background:rgba(255,255,255,0.04); border:1px solid rgba(255,255,255,0.1);
-    border-radius:14px; padding:14px 16px;
-    display:flex; align-items:center; gap:10px; margin-bottom:14px; transition:border-color .2s;
-  }
-  .input-wrapper:focus-within { border-color:rgba(234,179,8,0.4); background:rgba(234,179,8,0.03); }
-  .input-label { font-size:12px; font-weight:700; color:#eab308; background:rgba(234,179,8,0.1); border-radius:6px; padding:3px 8px; white-space:nowrap; flex-shrink:0; }
-  .bs-input { flex:1; background:none; border:none; outline:none; color:#f1f5f9; font-family:'JetBrains Mono',monospace; font-size:18px; font-weight:600; text-align:right; width:100%; }
-  .bs-input::placeholder { color:#334155; }
-  .results-grid { display:grid; grid-template-columns:1fr 1fr; gap:10px; }
-  .result-card { background:rgba(255,255,255,0.03); border:1px solid rgba(255,255,255,0.07); border-radius:14px; padding:14px; position:relative; overflow:hidden; }
-  .result-card::after { content:''; position:absolute; bottom:0; left:0; right:0; height:2px; border-radius:0 0 14px 14px; opacity:.6; }
-  .result-card.bcv::after          { background:linear-gradient(to right,#3b82f6,#1d4ed8); }
-  .result-card.euro::after         { background:linear-gradient(to right,#8b5cf6,#6d28d9); }
-  .result-card.usdt::after         { background:linear-gradient(to right,#10b981,#059669); }
-  .result-label { font-size:10px; font-weight:700; letter-spacing:1px; text-transform:uppercase; color:#64748b; margin-bottom:6px; }
-  .result-value { font-family:'JetBrains Mono',monospace; font-size:15px; font-weight:600; color:#f1f5f9; word-break:break-all; }
-  .result-value.empty { color:#334155; }
-  .result-currency { font-size:10px; color:#475569; margin-top:2px; }
-
-  /* EXTRA CONVERSION ROW (Bs↔USD inline summary) */
-  .extra-conv {
-    background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.07);
-    border-radius: 12px; padding: 10px 14px; margin-bottom: 12px;
-    display: flex; align-items: center; justify-content: space-between; gap: 8px;
-  }
-  .extra-conv-label { font-size: 10px; color: #64748b; font-family: 'JetBrains Mono', monospace; }
-  .extra-conv-value { font-size: 14px; font-weight: 700; color: #eab308; font-family: 'JetBrains Mono', monospace; }
-  .extra-conv-unit  { font-size: 10px; color: #475569; }
 
   /* FUEL CALCULATOR CARD */
   .fuel-card {
@@ -269,28 +234,6 @@ const styles = `
   .fuel-cost-bs { font-family: 'JetBrains Mono', monospace; font-size: 14px; font-weight: 700; color: #eab308; }
   .fuel-cost-usd { font-family: 'JetBrains Mono', monospace; font-size: 12px; font-weight: 600; color: #4ade80; margin-top: 1px; }
 
-  .currency-toggle {
-    display: flex; background: rgba(255,255,255,0.04);
-    border: 1px solid rgba(255,255,255,0.08); border-radius: 14px;
-    padding: 4px; gap: 4px; margin-bottom: 14px;
-  }
-  .toggle-btn {
-    flex: 1; padding: 10px 8px; border: none; border-radius: 10px;
-    font-family: 'Exo 2', sans-serif; font-size: 13px; font-weight: 700;
-    cursor: pointer; transition: all .2s ease; user-select: none;
-    display: flex; align-items: center; justify-content: center; gap: 6px;
-    background: transparent; color: #475569;
-  }
-  .toggle-btn.active-bs {
-    background: linear-gradient(135deg, #eab308, #ca8a04);
-    color: #0a0d12; box-shadow: 0 2px 12px rgba(234,179,8,0.3);
-  }
-  .toggle-btn.active-usd {
-    background: linear-gradient(135deg, #3b82f6, #1d4ed8);
-    color: #fff; box-shadow: 0 2px 12px rgba(59,130,246,0.3);
-  }
-  .toggle-btn:not(.active-bs):not(.active-usd):active { background: rgba(255,255,255,0.06); }
-
   /* CONVERSOR MULTI-MONEDA — 4 cuadros (Bs / USD / EUR / USDT) en 2x2 */
   .cur-grid {
     display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 14px;
@@ -300,6 +243,7 @@ const styles = `
     min-height: 62px; padding: 9px 12px;
     background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.1);
     border-radius: 13px; cursor: text; transition: border-color .2s, background .2s;
+    position: relative; /* Para anclar el botón + */
   }
   .cur-box.active {
     border-color: rgba(234,179,8,0.5); background: rgba(234,179,8,0.06);
@@ -316,8 +260,29 @@ const styles = `
     color: #f1f5f9; font-family: 'JetBrains Mono', monospace;
     font-size: 17px; font-weight: 700;
   }
-  .cur-box.active .cur-box-input { color: #eab308; }
+  .cur-box.active .cur-box-input { 
+    color: #eab308; 
+    padding-right: 32px; /* Evita que el texto pise el botón + */
+  }
   .cur-box-input::placeholder { color: #334155; }
+
+  /* Botón Flotante "+" */
+  .add-btn {
+    position: absolute; right: 10px; top: 50%; transform: translateY(-50%);
+    width: 26px; height: 26px; border-radius: 8px;
+    background: rgba(234,179,8,0.15); border: 1px solid rgba(234,179,8,0.3);
+    color: #eab308; font-size: 18px; font-weight: 700; line-height: 1;
+    display: flex; align-items: center; justify-content: center;
+    cursor: pointer; opacity: 0; pointer-events: none; transition: all .2s;
+    user-select: none; z-index: 10;
+  }
+  .cur-box.active .add-btn {
+    opacity: 1; pointer-events: auto;
+  }
+  .add-btn:active {
+    transform: translateY(-50%) scale(0.9);
+    background: rgba(234,179,8,0.3);
+  }
 
   /* ─── LA COCHINA · dividir la cuenta ─────────────────────────────── */
   .cochina-intro { font-size:11.5px; color:#94a3b8; line-height:1.5; margin-bottom:14px; }
@@ -372,25 +337,16 @@ const styles = `
   .cochina-per-cur { font-size:9.5px; font-weight:700; color:#64748b; letter-spacing:0.5px; margin-bottom:3px; }
   .cochina-per-val { font-family:'JetBrains Mono',monospace; font-size:13px; font-weight:700; color:#f1f5f9; word-break:break-all; line-height:1.2; }
   .cochina-per-val.empty { color:#334155; }
-  .cochina-total {
-    display:flex; align-items:center; justify-content:space-between;
-    font-size:11px; color:#94a3b8; font-family:'JetBrains Mono',monospace;
-    background:rgba(255,255,255,0.03); border:1px solid rgba(255,255,255,0.07);
-    border-radius:11px; padding:9px 13px;
+  
+  .input-wrapper {
+    background:rgba(255,255,255,0.04); border:1px solid rgba(255,255,255,0.1);
+    border-radius:14px; padding:14px 16px;
+    display:flex; align-items:center; gap:10px; margin-bottom:14px; transition:border-color .2s;
   }
-  .cochina-total b { color:#eab308; font-weight:700; }
-
-  /* WA SEND BUTTON under calc */
-  .wa-send-btn {
-    display: flex; align-items: center; justify-content: center; gap: 8px;
-    width: 100%; margin-top: 12px; padding: 12px;
-    background: rgba(34,197,94,0.12); border: 1px solid rgba(34,197,94,0.25);
-    border-radius: 14px; color: #4ade80; font-family: 'Exo 2', sans-serif;
-    font-size: 13px; font-weight: 700; cursor: pointer; transition: all .18s;
-    user-select: none;
-  }
-  .wa-send-btn:active { transform: scale(0.97); background: rgba(34,197,94,0.2); }
-  .wa-send-btn:disabled { opacity: 0.4; cursor: default; }
+  .input-wrapper:focus-within { border-color:rgba(234,179,8,0.4); background:rgba(234,179,8,0.03); }
+  .input-label { font-size:12px; font-weight:700; color:#eab308; background:rgba(234,179,8,0.1); border-radius:6px; padding:3px 8px; white-space:nowrap; flex-shrink:0; }
+  .bs-input { flex:1; background:none; border:none; outline:none; color:#f1f5f9; font-family:'JetBrains Mono',monospace; font-size:18px; font-weight:600; text-align:right; width:100%; }
+  .bs-input::placeholder { color:#334155; }
 
   /* ACCIONES LADO A LADO (Pago/Cobro + Apoya este proyecto) */
   .action-row {
@@ -869,6 +825,7 @@ export default function App() {
   const [toast, setToast]         = useState(null);
   const [showDonate, setShowDonate] = useState(false);
   const toastTimer = useRef(null);
+  const inputRefs = useRef({});
 
   /* Datos de Pago Móvil */
   const PM_KEY = "vzla_pago_movil_v1";
@@ -1142,13 +1099,17 @@ export default function App() {
                 <div
                   key={c.id}
                   className={`cur-box ${isActive ? "active" : ""}`}
-                  onClick={() => selectCur(c.id)}
+                  onClick={() => {
+                    selectCur(c.id);
+                    inputRefs.current[c.id]?.focus();
+                  }}
                 >
                   <div className="cur-box-head">
                     <span className="cur-box-icon">{c.icon}</span>
                     <span className="cur-box-label">{c.label}</span>
                   </div>
                   <input
+                    ref={el => inputRefs.current[c.id] = el}
                     className="cur-box-input"
                     type="text"
                     inputMode="text"
@@ -1157,6 +1118,23 @@ export default function App() {
                     onFocus={() => selectCur(c.id)}
                     onChange={(e) => handleAmountChange(e)}
                   />
+                  
+                  {/* Botón Flotante "+" que solo aparece si la caja está activa */}
+                  <button 
+                    className="add-btn"
+                    tabIndex="-1"
+                    onPointerDown={(e) => {
+                      e.preventDefault(); // Evita que el input pierda el foco en el toque
+                      e.stopPropagation();
+                      let newVal = amount || "0,00";
+                      if (!/[+\-*/]$/.test(newVal)) {
+                        setAmount(newVal + "+");
+                      }
+                      setTimeout(() => inputRefs.current[c.id]?.focus(), 0);
+                    }}
+                  >
+                    +
+                  </button>
                 </div>
               );
             })}
