@@ -4,8 +4,8 @@ const STORAGE_KEY = "vzla_cambio_cache_v3";
 const CACHE_TTL = 2 * 60 * 60 * 1000; // 2 horas
 
 const FALLBACK_RATES = {
-  bcv: 602.33,          // BCV oficial USD — 18/06/2026 (bcv.today)
-  euro: 698.22,         // Euro BCV oficial — 18/06/2026 (bcv.today)
+  bcv: 602.33,          // BCV oficial USD
+  euro: 698.22,         // Euro BCV oficial
   usdt: 780.00,
 };
 
@@ -706,9 +706,6 @@ async function fetchRates() {
   const results = { ...FALLBACK_RATES };
   let fromApi = false;
 
-  // 0. FUENTE OFICIAL PROPIA: /api/bcv (función serverless de Vercel que scrapea el
-  //    BCV directamente, mismo origen, sin CORS ni dependencia de terceros).
-  //    Respuesta: { ok, usd:{valor}, eur:{valor}, fecha_valor, ... }
   try {
     const res = await fetch("/api/bcv", {
       cache: "no-cache",
@@ -721,9 +718,6 @@ async function fetchRates() {
     }
   } catch (_) {}
 
-  // 1. FALLBACK USD+EUR: bcv.today/api/v1/rate.json
-  //    JSON estático sin API key, CORS abierto, devuelve USD + EUR en un solo request.
-  //    Formato: { USD: 602.33, EUR: 698.22, updated_at, effective_date, date }
   if (!fromApi) {
     try {
       const res = await fetch("https://bcv.today/api/v1/rate.json", {
@@ -736,7 +730,6 @@ async function fetchRates() {
     } catch (_) {}
   }
 
-  // 2. FALLBACK USD+EUR: jsDelivr CDN (espejo del mismo repo de bcv.today)
   if (!fromApi) {
     try {
       const res = await fetch(
@@ -749,7 +742,6 @@ async function fetchRates() {
     } catch (_) {}
   }
 
-  // 3. FALLBACK USD: ve.dolarapi.com (solo si aun no tenemos USD)
   if (results.bcv === FALLBACK_RATES.bcv) {
     try {
       const res = await fetch("https://ve.dolarapi.com/v1/dolares/oficial", { signal: AbortSignal.timeout(7000) });
@@ -758,7 +750,6 @@ async function fetchRates() {
     } catch (_) {}
   }
 
-  // 4. FALLBACK EURO: bcv-api.deno.dev (solo si aun no tenemos EUR)
   if (results.euro === FALLBACK_RATES.euro) {
     try {
       const res = await fetch("https://bcv-api.deno.dev/v1/exchange/euro", { signal: AbortSignal.timeout(6000) });
@@ -767,9 +758,6 @@ async function fetchRates() {
     } catch (_) {}
   }
 
-  // 5. USDT via Criptoya (Binance P2P) — precio minuto a minuto
-  //    GET https://criptoya.com/api/binancep2p/USDT/VES/1
-  //    Respuesta: { ask, totalAsk, bid, totalBid, time }
   try {
     const res = await fetch("https://criptoya.com/api/binancep2p/USDT/VES/1", {
       cache: "no-cache",
@@ -797,49 +785,25 @@ function fmtConv(val) {
   if (val < 1000)  return val.toFixed(2);
   return val.toLocaleString("es-VE", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 }
-/* Formato de monto VE para el input usando Intl.NumberFormat (es-VE).
-   - Agrupa miles con "." y usa "," como separador decimal.
-   - Permite escribir decimales en vivo (no fuerza los 2 decimales mientras escribes).
-   - La precisión exacta de 2 decimales se aplica al salir del campo (blurAmount). */
-const veIntFmt = new Intl.NumberFormat("es-VE", { style: "decimal", maximumFractionDigits: 0 });
-function formatVEInput(amount) {
-  if (amount === "" || amount == null) return "";
-  const [intStr, decStr] = String(amount).split(".");
-  const intNum = parseInt(intStr || "0", 10) || 0;
-  const intFmt = veIntFmt.format(intNum);
-  if (decStr === undefined) return intFmt;       // aún sin coma
-  return `${intFmt},${decStr.slice(0, 2)}`;       // conserva lo que escribe (máx 2)
-}
-/* Normaliza lo que escribe el usuario a un número limpio ("1234.56"), máx 2 decimales.
-   Detección inteligente del separador decimal:
-   - Si hay coma → la coma es el decimal (convención venezolana), los puntos son miles.
-   - Si solo hay puntos → el último punto se toma como decimal si lo siguen ≤2 dígitos
-     (ej: "1650.15" → 1650.15); si lo siguen 3+ dígitos, todos los puntos son miles
-     (ej: "1.234.567" → 1234567). Los miles se agrupan solos al mostrar. */
-function cleanVEAmount(value) {
-  let v = String(value).replace(/[^0-9.,]/g, "");
-  if (v.includes(",")) {
-    const li = v.lastIndexOf(",");
-    const intp = v.slice(0, li).replace(/\D/g, "");
-    const dec = v.slice(li + 1).replace(/\D/g, "").slice(0, 2);
-    return `${intp}.${dec}`;
+
+/* 
+ * Evalúa expresiones matemáticas de forma segura
+ * Soportando el formato VE (coma como decimal y puntos de miles)
+ */
+function safeEvaluate(str) {
+  if (!str) return 0;
+  try {
+    let sanitized = String(str).replace(/\./g, "").replace(/,/g, ".");
+    sanitized = sanitized.replace(/[^0-9.+-/*() ]/g, "");
+    sanitized = sanitized.replace(/[+\-*/ ]+$/, "");
+    if (!sanitized) return 0;
+    const result = new Function('return ' + sanitized)();
+    return (isNaN(result) || !isFinite(result)) ? 0 : result;
+  } catch (e) {
+    return 0;
   }
-  if (v.includes(".")) {
-    const li = v.lastIndexOf(".");
-    const after = v.slice(li + 1).replace(/\D/g, "");
-    if (after.length <= 2) {
-      const intp = v.slice(0, li).replace(/\D/g, "");
-      return `${intp}.${after}`;
-    }
-    return v.replace(/\./g, "");
-  }
-  return v;
 }
-/* Formato de precisión final: 2 decimales exactos (es-VE) */
-function toPreciseAmount(amount) {
-  const n = parseFloat(amount);
-  return isNaN(n) ? "" : n.toFixed(2);
-}
+
 function todayStr() {
   const n = new Date();
   return `${String(n.getDate()).padStart(2,"0")}-${String(n.getMonth()+1).padStart(2,"0")}-${n.getFullYear()}`;
@@ -895,22 +859,22 @@ export default function App() {
   const [fromApi, setFromApi]     = useState(false);
   const [lastUpdate, setLastUpdate] = useState(null);
   const [isOnline, setIsOnline]   = useState(typeof navigator !== "undefined" ? navigator.onLine : true);
-  const [activeCur, setActiveCur] = useState("bs"); // cuadro que el usuario está editando
-  const [amount, setAmount]       = useState("");    // monto escrito en el cuadro activo
-  const [litros, setLitros]       = useState(""); // litros deseados para calcular costo
-  const [cochinaCur, setCochinaCur]   = useState("bs");  // moneda del monto de La Cochina
-  const [cochinaMonto, setCochinaMonto] = useState("");  // monto total a dividir
-  const [cochinaGente, setCochinaGente] = useState(2);   // cantidad de personas (1-20)
-  const [modal, setModal]         = useState(null); // null | 'cotizacion'
+  const [activeCur, setActiveCur] = useState("bs"); 
+  const [amount, setAmount]       = useState("");    
+  const [litros, setLitros]       = useState(""); 
+  const [cochinaCur, setCochinaCur]   = useState("bs");  
+  const [cochinaMonto, setCochinaMonto] = useState("");  
+  const [cochinaGente, setCochinaGente] = useState(2);   
+  const [modal, setModal]         = useState(null); 
   const [toast, setToast]         = useState(null);
   const [showDonate, setShowDonate] = useState(false);
   const toastTimer = useRef(null);
 
-  /* Datos de Pago Móvil del usuario (se guardan localmente para no reescribirlos) */
+  /* Datos de Pago Móvil */
   const PM_KEY = "vzla_pago_movil_v1";
   const [incluirPago, setIncluirPago] = useState(true);
-  const [bancoOpen, setBancoOpen] = useState(false); // desplegable de bancos
-  const [tasaPago, setTasaPago] = useState("bcv"); // tasa elegida para el pago
+  const [bancoOpen, setBancoOpen] = useState(false); 
+  const [tasaPago, setTasaPago] = useState("bcv"); 
   const [pagoMovil, setPagoMovil] = useState(() => {
     try {
       const saved = localStorage.getItem(PM_KEY);
@@ -918,6 +882,7 @@ export default function App() {
     } catch (_) {}
     return { banco: "", telefono: "", cedula: "", titular: "" };
   });
+  
   const updatePago = (field, value) => {
     setPagoMovil(prev => {
       const next = { ...prev, [field]: value };
@@ -926,7 +891,6 @@ export default function App() {
     });
   };
 
-  /* Online/offline listeners */
   useEffect(() => {
     const on  = () => setIsOnline(true);
     const off = () => setIsOnline(false);
@@ -935,32 +899,38 @@ export default function App() {
     return () => { window.removeEventListener("online", on); window.removeEventListener("offline", off); };
   }, []);
 
-  /* Show toast helper */
   const showToast = (msg) => {
     setToast(msg);
     clearTimeout(toastTimer.current);
     toastTimer.current = setTimeout(() => setToast(null), 2200);
   };
 
-  /* Monto estilo "centavos": los dígitos entran por la derecha, los 2 últimos
-     son decimales. Formatea en vivo (es-VE) sin saltos de cursor ni ambigüedad. */
+  /* 
+   * Mantiene el formato natural (estilo centavos) pero permite 
+   * conservar símbolos matemáticos en el mismo input. 
+   */
   const veMontoFmt = new Intl.NumberFormat("es-VE", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  
   const handleAmountChange = (e) => {
-    const soloNumeros = e.target.value.replace(/\D/g, "");
-    if (!soloNumeros) { setAmount(""); return; }
-    const numeroFlotante = parseInt(soloNumeros, 10) / 100;
-    setAmount(veMontoFmt.format(numeroFlotante));
-  };
-
-  /* Al elegir otro cuadro de moneda, se limpia el monto para escribir uno nuevo. */
-  const selectCur = (id) => {
-    setActiveCur(prev => {
-      if (prev !== id) setAmount("");
-      return id;
+    const raw = e.target.value;
+    const withoutSpaces = raw.replace(/\s+/g, "");
+    const parts = withoutSpaces.split(/([+\-*/]+)/);
+    
+    let newAmount = "";
+    parts.forEach(part => {
+      if (/^[+\-*/]+$/.test(part)) {
+        newAmount += part;
+      } else {
+        const soloNumeros = part.replace(/\D/g, "");
+        if (soloNumeros) {
+          const numeroFlotante = parseInt(soloNumeros, 10) / 100;
+          newAmount += veMontoFmt.format(numeroFlotante);
+        }
+      }
     });
+    setAmount(newAmount);
   };
 
-  /* La Cochina: monto total estilo "centavos" (mismos que la calculadora). */
   const handleCochinaMonto = (e) => {
     const soloNumeros = e.target.value.replace(/\D/g, "");
     if (!soloNumeros) { setCochinaMonto(""); return; }
@@ -968,7 +938,6 @@ export default function App() {
     setCochinaMonto(veMontoFmt.format(numeroFlotante));
   };
 
-  /* Litros deseados: permite dígitos y un separador decimal (coma o punto). */
   const handleLitrosChange = (e) => {
     let v = e.target.value.replace(/[^\d.,]/g, "").replace(/,/g, ".");
     const parts = v.split(".");
@@ -976,7 +945,6 @@ export default function App() {
     setLitros(v);
   };
 
-  /* Load rates with localStorage cache */
   const loadRates = useCallback(async (force = false) => {
     try {
       const cached = localStorage.getItem(STORAGE_KEY);
@@ -987,7 +955,7 @@ export default function App() {
         }
       }
     } catch (_) {}
-    if (!navigator.onLine) return; // offline: keep cache/fallback
+    if (!navigator.onLine) return; 
     setLoading(true);
     try {
       const data = await fetchRates();
@@ -999,29 +967,32 @@ export default function App() {
 
   useEffect(() => {
     loadRates();
-    const interval = setInterval(() => loadRates(true), 2 * 60 * 60 * 1000); // auto-actualizar cada 2h
+    const interval = setInterval(() => loadRates(true), 2 * 60 * 60 * 1000); 
     return () => clearInterval(interval);
   }, [loadRates]);
 
-  /* Derived – calculadora convertible entre 4 monedas (Bs, USD, EUR, USDT).
-     El usuario escribe en cualquiera de los 4 cuadros (activeCur) y los otros
-     se calculan automáticamente: monto activo → Bs → cada moneda. */
-  const inputNum = parseFloat(cleanVEAmount(amount)) || 0;
+  const inputNum = safeEvaluate(amount) || 0;
   const activeBsRate = rateToBs(activeCur, rates);
   const amountInBs = inputNum && activeBsRate ? inputNum * activeBsRate : 0;
 
-  // Valor mostrado en cada cuadro
   const curValues = {};
   CURRENCIES.forEach(c => {
     if (c.id === activeCur) {
-      curValues[c.id] = amount; // el cuadro activo muestra lo que el usuario escribe
+      curValues[c.id] = amount; 
     } else {
       const r = rateToBs(c.id, rates);
       curValues[c.id] = amountInBs && r ? fmtConv(amountInBs / r) : "";
     }
   });
 
-  // Precios de gasolina Venezuela 2026 (Bs/litro usando tasa BCV)
+  /* Mantiene la limpieza de la memoria al cambiar de moneda */
+  const selectCur = (id) => {
+    setActiveCur(prev => {
+      if (prev !== id) setAmount("");
+      return id;
+    });
+  };
+
   const FUEL = [
     { id:"internacional", label:"Internacional",  priceUSD: 0.50,   priceBs: null,  tag:"Sin límite · Biopago/divisas" },
     { id:"premium",    label:"Super Premium 97",  priceUSD: 1.00,   priceBs: null,  tag:"Solo efectivo USD" },
@@ -1030,20 +1001,18 @@ export default function App() {
     priceBs: f.priceUSD * (rates.bcv || FALLBACK_RATES.bcv),
   }));
 
-  // Litros que dan según modo y monto
-  // Costo de los litros deseados por el usuario (en Bs y USD según cada tipo)
   const litrosNum = parseFloat(litros) || 0;
   const fuelCosts = litrosNum > 0
     ? FUEL.map(f => ({ ...f, costBs: litrosNum * f.priceBs, costUSD: litrosNum * f.priceUSD }))
     : null;
 
-  /* ── LA COCHINA — dividir el monto en partes iguales y convertir a Bs/USD/EUR ── */
-  const cochinaNum   = parseFloat(cleanVEAmount(cochinaMonto)) || 0;   // monto en la moneda elegida
+  /* ── LA COCHINA ── */
+  const cochinaNum   = safeEvaluate(cochinaMonto) || 0;   
   const cochinaBsRate = rateToBs(cochinaCur, rates);
-  const cochinaTotalBs = cochinaNum && cochinaBsRate ? cochinaNum * cochinaBsRate : 0; // total en Bs
+  const cochinaTotalBs = cochinaNum && cochinaBsRate ? cochinaNum * cochinaBsRate : 0; 
   const cochinaPorPersonaBs = cochinaTotalBs && cochinaGente > 0 ? cochinaTotalBs / cochinaGente : 0;
-  // Valor por persona en cada moneda
-  const cochinaPer = {};   // { bs, usd, eur }
+  
+  const cochinaPer = {};   
   COCHINA_CURRENCIES.forEach(c => {
     const r = rateToBs(c.id, rates);
     cochinaPer[c.id] = cochinaPorPersonaBs && r ? cochinaPorPersonaBs / r : 0;
@@ -1057,11 +1026,8 @@ export default function App() {
     { id:"usdt", icon:"₮",  img:"https://cryptologos.cc/logos/tether-usdt-logo.png",                                                  name:"USDT",      subtitle:"Binance P2P · Promedio",     value:rates.usdt, unit:"Bs/USDT", src:"Binance P2P"   },
   ];
 
-  /* ── WA Cotización ── */
-  // Abre el formulario de Pago Móvil antes de enviar
   const sendWaCotizacion = () => setModal("cotizacion");
 
-  // Confirma y envía la cotización por WhatsApp (con o sin datos de Pago Móvil)
   const confirmWaCotizacion = () => {
     const pm = incluirPago ? pagoMovil : null;
     const msg = buildWaQuote(rates, amountInBs, activeCur, today, pm, tasaPago);
@@ -1104,7 +1070,6 @@ export default function App() {
         {/* RATES */}
         <div className="section-label">Cotizaciones del día</div>
         <div className="rates-grid">
-          {/* Dólar BCV — ancho completo */}
           {rateCards.filter(c => c.id === "bcv").map(card => (
             <div key={card.id} className={`rate-card ${card.id}`}>
               <div className="rate-left">
@@ -1133,7 +1098,6 @@ export default function App() {
             </div>
           ))}
 
-          {/* Euro BCV + USDT — una al lado de la otra */}
           <div className="rates-row">
             {rateCards.filter(c => c.id === "euro" || c.id === "usdt").map(card => (
               <div key={card.id} className={`rate-card half ${card.id}`}>
@@ -1171,8 +1135,6 @@ export default function App() {
         <div className="calculator">
           <div className="calc-title">⇄ Calculadora Convertible</div>
 
-          {/* Conversor multi-moneda: 4 cuadros (Bs, USD, EUR, USDT).
-              Escribe en cualquiera y los otros se calculan automáticamente. */}
           <div className="cur-grid">
             {CURRENCIES.map(c => {
               const isActive = c.id === activeCur;
@@ -1189,21 +1151,19 @@ export default function App() {
                   <input
                     className="cur-box-input"
                     type="text"
-                    inputMode="numeric"
+                    inputMode="text"
                     placeholder="0,00"
                     value={curValues[c.id] || ""}
                     onFocus={() => selectCur(c.id)}
-                    onChange={(e) => { setActiveCur(c.id); handleAmountChange(e); }}
+                    onChange={(e) => handleAmountChange(e)}
                   />
                 </div>
               );
             })}
           </div>
 
-          {/* Results grid — calculadora de gasolina */}
           <div className="results-grid">
-
-            {/* ⛽ CALCULADORA DE GASOLINA — ubicada debajo de EURO BCV y USDT */}
+            {/* ⛽ CALCULADORA DE GASOLINA */}
             <div className="fuel-card">
               <div className="fuel-header">
                 <div className="fuel-icon">
@@ -1221,7 +1181,6 @@ export default function App() {
                 </div>
               </div>
 
-              {/* ⛽ Calcular costo por litros deseados → Bs y USD */}
               <div className="fuel-litros-block">
                 <div className="fuel-litros-label">¿Cuántos litros deseas?</div>
                 <div className="fuel-input-wrapper">
@@ -1260,7 +1219,7 @@ export default function App() {
             </div>
           </div>
 
-          {/* ── 🐷 LA COCHINA — dividir la cuenta entre varias personas ── */}
+          {/* ── 🐷 LA COCHINA ── */}
           <div className="divider" style={{margin:"18px 0"}}/>
           <div className="calc-title" style={{color:"#f1f5f9"}}>🐷 La Cochina · Dividir la cuenta 🐷</div>
           <div className="cochina-intro">
@@ -1268,7 +1227,6 @@ export default function App() {
             y en cuántas personas dividirlo. Te mostramos cuánto paga cada quien.
           </div>
 
-          {/* Selector de moneda con imágenes */}
           <div className="cochina-curs">
             {COCHINA_CURRENCIES.map(c => (
               <div
@@ -1291,7 +1249,6 @@ export default function App() {
             ))}
           </div>
 
-          {/* Monto total */}
           <div className="input-wrapper">
             <span className="input-label">
               {COCHINA_CURRENCIES.find(c => c.id === cochinaCur)?.label}
@@ -1306,7 +1263,6 @@ export default function App() {
             />
           </div>
 
-          {/* Cantidad de personas (1 a 20) */}
           <div className="cochina-people">
             <div>
               <div className="cochina-people-label">👥 Personas</div>
@@ -1327,7 +1283,6 @@ export default function App() {
             </div>
           </div>
 
-          {/* Resultado: cuánto paga cada persona en cada moneda */}
           <div className="cochina-result">
             <div className="cochina-result-title">Paga cada persona</div>
             <div className="cochina-per-grid">
@@ -1342,7 +1297,6 @@ export default function App() {
             </div>
           </div>
 
-          {/* Acciones lado a lado: Pago/Cobro vía WhatsApp + Apoya este proyecto */}
           <div className="action-row">
             <button className="action-btn wa-action" onClick={sendWaCotizacion}>
               <span className="action-icon">💬</span>
@@ -1359,7 +1313,7 @@ export default function App() {
           </div>
         </div>
 
-        {/* ── DONACIONES (contenido desplegable) ── */}
+        {/* ── DONACIONES ── */}
         <div className={`donate-body ${showDonate ? "open" : ""}`}>
         <div className="donate-section" style={{margin:"8px 0 0",borderRadius:16}}>
           <div className="donate-header">
@@ -1370,7 +1324,6 @@ export default function App() {
             </div>
           </div>
 
-          {/* Pago Móvil */}
           <div className="donate-method pago-movil">
             <div className="donate-method-header">
               <div className="donate-method-left">
@@ -1399,7 +1352,6 @@ export default function App() {
             ))}
           </div>
 
-          {/* USDT TRC20 */}
           <div className="donate-method trc20">
             <div className="donate-method-header">
               <div className="donate-method-left">
@@ -1416,7 +1368,6 @@ export default function App() {
             </div>
           </div>
 
-          {/* USDT ERC20 */}
           <div className="donate-method erc20">
             <div className="donate-method-header">
               <div className="donate-method-left">
@@ -1433,7 +1384,6 @@ export default function App() {
             </div>
           </div>
 
-          {/* USDT BEP20 */}
           <div className="donate-method bep20">
             <div className="donate-method-header">
               <div className="donate-method-left">
@@ -1455,7 +1405,7 @@ export default function App() {
             <span>♥</span> ¡Gracias por tu apoyo!
           </div>
         </div>
-        </div> {/* end donate-body */}
+        </div>
 
         {/* FOOTER */}
         <div className="footer">
@@ -1480,7 +1430,6 @@ export default function App() {
               Todo se incluirá en el mensaje.
             </div>
 
-            {/* Selector de tasa para el pago (una de las 5 tasas) */}
             <div className="pm-section-label">💲 Pagar a la tasa de:</div>
             <div className="pm-rates">
               {rateCards.map(card => (
