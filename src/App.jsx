@@ -1112,7 +1112,7 @@ export default function App() {
                     ref={el => inputRefs.current[c.id] = el}
                     className="cur-box-input"
                     type="text"
-                    inputMode="text"
+                    inputMode="decimal"
                     placeholder="0,00"
                     value={curValues[c.id] || ""}
                     onFocus={() => selectCur(c.id)}
@@ -1234,7 +1234,7 @@ export default function App() {
             <input
               className="bs-input"
               type="text"
-              inputMode="numeric"
+              inputMode="decimal"
               placeholder="0,00"
               value={cochinaMonto}
               onChange={handleCochinaMonto}
