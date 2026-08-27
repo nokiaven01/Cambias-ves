@@ -479,6 +479,8 @@ const styles = `
   .pm-rate-chip:active { transform:scale(0.97); }
   .pm-rate-chip.sel { background:rgba(34,197,94,0.12); border-color:rgba(34,197,94,0.45); }
   .pm-rate-name { font-size:13px; font-weight:700; color:#f1f5f9; display:flex; align-items:center; gap:6px; }
+  .pm-rate-chip-icon { width:18px; height:18px; object-fit:contain; border-radius:4px; display:inline-block; }
+  .pm-rate-chip-icon.bcv { background:#fff; padding:2px; }
   .pm-rate-val { font-size:12px; color:#94a3b8; font-family:'JetBrains Mono',monospace; }
   .pm-rate-chip.sel .pm-rate-val { color:#4ade80; }
 
@@ -828,24 +830,13 @@ export default function App() {
   const inputRefs = useRef({});
 
   /* Datos de Pago Móvil */
-  const PM_KEY = "vzla_pago_movil_v1";
   const [incluirPago, setIncluirPago] = useState(true);
   const [bancoOpen, setBancoOpen] = useState(false); 
   const [tasaPago, setTasaPago] = useState("bcv"); 
-  const [pagoMovil, setPagoMovil] = useState(() => {
-    try {
-      const saved = localStorage.getItem(PM_KEY);
-      if (saved) return JSON.parse(saved);
-    } catch (_) {}
-    return { banco: "", telefono: "", cedula: "", titular: "" };
-  });
+  const [pagoMovil, setPagoMovil] = useState({ banco: "", telefono: "", cedula: "", titular: "" });
   
   const updatePago = (field, value) => {
-    setPagoMovil(prev => {
-      const next = { ...prev, [field]: value };
-      try { localStorage.setItem(PM_KEY, JSON.stringify(next)); } catch (_) {}
-      return next;
-    });
+    setPagoMovil(prev => ({ ...prev, [field]: value }));
   };
 
   useEffect(() => {
@@ -989,7 +980,10 @@ export default function App() {
     { id:"usdt", icon:"₮",  img:"https://cryptologos.cc/logos/tether-usdt-logo.png",                                                  name:"USDT",      subtitle:"Binance P2P · Promedio",     value:rates.usdt, unit:"Bs/USDT", src:"Binance P2P"   },
   ];
 
-  const sendWaCotizacion = () => setModal("cotizacion");
+  const sendWaCotizacion = () => {
+    setPagoMovil({ banco: "", telefono: "", cedula: "", titular: "" });
+    setModal("cotizacion");
+  };
 
   const confirmWaCotizacion = () => {
     const pm = incluirPago ? pagoMovil : null;
@@ -1445,7 +1439,18 @@ export default function App() {
                   onClick={() => setTasaPago(card.id)}
                 >
                   <div className="pm-rate-name">
-                    <span>{card.icon}</span> {card.name}
+                    {card.img ? (
+                      <img
+                        src={card.img}
+                        alt={card.name}
+                        className={`pm-rate-chip-icon ${card.id === "bcv" ? "bcv" : ""}`}
+                        loading="lazy"
+                        onError={(e) => { e.currentTarget.style.display = "none"; }}
+                      />
+                    ) : (
+                      <span>{card.icon}</span>
+                    )}
+                    {card.name}
                   </div>
                   <div className="pm-rate-val">{fmt(card.value)} {card.unit}</div>
                 </div>
