@@ -1255,19 +1255,19 @@ export default function App() {
           <div className="cochina-people">
             <div>
               <div className="cochina-people-label">👥 Personas</div>
-              <div className="cochina-people-hint">Máximo 20</div>
+              <div className="cochina-people-hint">De 2 a 15 personas</div>
             </div>
             <div className="cochina-stepper">
               <button
                 className="cochina-step-btn"
-                onClick={() => setCochinaGente(n => Math.max(1, n - 1))}
-                disabled={cochinaGente <= 1}
+                onClick={() => setCochinaGente(n => Math.max(2, n - 1))}
+                disabled={cochinaGente <= 2}
               >−</button>
               <span className="cochina-people-count">{cochinaGente}</span>
               <button
                 className="cochina-step-btn"
-                onClick={() => setCochinaGente(n => Math.min(20, n + 1))}
-                disabled={cochinaGente >= 20}
+                onClick={() => setCochinaGente(n => Math.min(15, n + 1))}
+                disabled={cochinaGente >= 15}
               >+</button>
             </div>
           </div>
