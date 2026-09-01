@@ -236,7 +236,7 @@ const styles = `
 
   /* CONVERSOR MULTI-MONEDA — 4 cuadros (Bs / USD / EUR / USDT) en 2x2 */
   .cur-grid {
-    display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 14px;
+    display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 10px;
   }
   .cur-box {
     display: flex; flex-direction: column; justify-content: center; gap: 4px;
@@ -283,6 +283,28 @@ const styles = `
     transform: translateY(-50%) scale(0.9);
     background: rgba(234,179,8,0.3);
   }
+
+  /* TARJETAS DE BS POR CADA TASA (Equivalencias rápidas) */
+  .bs-rates-breakdown {
+    display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 6px; margin-bottom: 14px;
+  }
+  .bs-rate-mini {
+    background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.06);
+    border-radius: 10px; padding: 7px 6px; text-align: center; display: flex;
+    flex-direction: column; justify-content: center; transition: all .15s;
+  }
+  .bs-rate-mini.active-tag {
+    border-color: rgba(234,179,8,0.3); background: rgba(234,179,8,0.04);
+  }
+  .bs-rate-mini-title {
+    font-size: 8.5px; font-weight: 800; color: #64748b; letter-spacing: 0.3px; text-transform: uppercase;
+  }
+  .bs-rate-mini.active-tag .bs-rate-mini-title { color: #eab308; }
+  .bs-rate-mini-val {
+    font-family: 'JetBrains Mono', monospace; font-size: 11.5px; font-weight: 700;
+    color: #f1f5f9; margin-top: 2px; word-break: break-all;
+  }
+  .bs-rate-mini-val.empty { color: #334155; }
 
   /* ─── LA COCHINA · dividir la cuenta ─────────────────────────────── */
   .cochina-intro { font-size:11.5px; color:#94a3b8; line-height:1.5; margin-bottom:14px; }
@@ -992,6 +1014,13 @@ export default function App() {
     setModal(null);
   };
 
+  /* Desglose de equivalencia directa en Bolívares según cada tasa */
+  const bsBreakdown = {
+    bcv: inputNum ? inputNum * (rates.bcv || FALLBACK_RATES.bcv) : 0,
+    euro: inputNum ? inputNum * (rates.euro || FALLBACK_RATES.euro) : 0,
+    usdt: inputNum ? inputNum * (rates.usdt || FALLBACK_RATES.usdt) : 0,
+  };
+
   return (
     <>
       <style>{styles}</style>
@@ -1149,6 +1178,28 @@ export default function App() {
                 </div>
               );
             })}
+          </div>
+
+          {/* CUADROS PEQUEÑOS DE EQUIVALENCIA EN BS SEGÚN CADA TASA */}
+          <div className="bs-rates-breakdown">
+            <div className={`bs-rate-mini ${activeCur === "usd" || activeCur === "bs" ? "active-tag" : ""}`}>
+              <span className="bs-rate-mini-title">Bs BCV</span>
+              <span className={`bs-rate-mini-val ${!bsBreakdown.bcv ? "empty" : ""}`}>
+                {bsBreakdown.bcv ? `${fmt(bsBreakdown.bcv)}` : "—"}
+              </span>
+            </div>
+            <div className={`bs-rate-mini ${activeCur === "eur" ? "active-tag" : ""}`}>
+              <span className="bs-rate-mini-title">Bs Euro</span>
+              <span className={`bs-rate-mini-val ${!bsBreakdown.euro ? "empty" : ""}`}>
+                {bsBreakdown.euro ? `${fmt(bsBreakdown.euro)}` : "—"}
+              </span>
+            </div>
+            <div className={`bs-rate-mini ${activeCur === "usdt" ? "active-tag" : ""}`}>
+              <span className="bs-rate-mini-title">Bs USDT</span>
+              <span className={`bs-rate-mini-val ${!bsBreakdown.usdt ? "empty" : ""}`}>
+                {bsBreakdown.usdt ? `${fmt(bsBreakdown.usdt)}` : "—"}
+              </span>
+            </div>
           </div>
 
           <div className="results-grid">
