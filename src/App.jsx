@@ -1014,11 +1014,12 @@ export default function App() {
     setModal(null);
   };
 
-  /* Desglose de equivalencia directa en Bolívares según cada tasa */
+  /* Desglose de equivalencia en Bs sólo cuando la moneda activa NO es Bolívares (Bs) */
+  const showBsBreakdown = activeCur !== "bs" && inputNum > 0;
   const bsBreakdown = {
-    bcv: inputNum ? inputNum * (rates.bcv || FALLBACK_RATES.bcv) : 0,
-    euro: inputNum ? inputNum * (rates.euro || FALLBACK_RATES.euro) : 0,
-    usdt: inputNum ? inputNum * (rates.usdt || FALLBACK_RATES.usdt) : 0,
+    bcv: showBsBreakdown ? inputNum * (rates.bcv || FALLBACK_RATES.bcv) : 0,
+    euro: showBsBreakdown ? inputNum * (rates.euro || FALLBACK_RATES.euro) : 0,
+    usdt: showBsBreakdown ? inputNum * (rates.usdt || FALLBACK_RATES.usdt) : 0,
   };
 
   return (
@@ -1182,7 +1183,7 @@ export default function App() {
 
           {/* CUADROS PEQUEÑOS DE EQUIVALENCIA EN BS SEGÚN CADA TASA */}
           <div className="bs-rates-breakdown">
-            <div className={`bs-rate-mini ${activeCur === "usd" || activeCur === "bs" ? "active-tag" : ""}`}>
+            <div className={`bs-rate-mini ${activeCur === "usd" ? "active-tag" : ""}`}>
               <span className="bs-rate-mini-title">Bs BCV</span>
               <span className={`bs-rate-mini-val ${!bsBreakdown.bcv ? "empty" : ""}`}>
                 {bsBreakdown.bcv ? `${fmt(bsBreakdown.bcv)}` : "—"}
