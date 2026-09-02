@@ -951,22 +951,35 @@ export default function App() {
   const inputNum = safeEvaluate(amount) || 0;
   
   /*
-   * Obtenemos el equivalente total en Bolívares de la moneda activa
+   * Si la moneda activa es "bs", usamos exactamente lo ingresado.
+   * Si es USD/EUR/USDT, calculamos primero los Dólares equivalentes reales 
+   * y los multiplicamos EXCLUSIVAMENTE por la tasa Dólar BCV.
    */
-  const activeRate = rateToBs(activeCur, rates);
-  const amountInBs = inputNum && activeRate ? inputNum * activeRate : 0;
+  const bcvRate = rates.bcv || FALLBACK_RATES.bcv;
+  let amountInBs = 0;
+
+  if (inputNum) {
+    if (activeCur === "bs") {
+      amountInBs = inputNum;
+    } else {
+      const curRate = rateToBs(activeCur, rates) || bcvRate;
+      const usdEquiv = (inputNum * curRate) / bcvRate;
+      amountInBs = usdEquiv * bcvRate;
+    }
+  }
 
   const curValues = {};
   CURRENCIES.forEach(c => {
     if (c.id === activeCur) {
       curValues[c.id] = amount; 
     } else if (c.id === "bs") {
-      /* La caja Bs = $ BCV siempre muestra el monto en Bolívares tal cual */
+      /* Muestra siempre los Bolívares en base al Dólar BCV */
       curValues[c.id] = amountInBs ? veMontoFmt.format(amountInBs) : "";
     } else {
-      /* USD, EUR y USDT calculan su equivalencia individual */
+      /* USD, EUR y USDT calculan su equivalencia propia */
       const r = rateToBs(c.id, rates);
-      curValues[c.id] = amountInBs && r ? fmtConv(amountInBs / r) : "";
+      const realBs = inputNum ? inputNum * (rateToBs(activeCur, rates) || 1) : 0;
+      curValues[c.id] = realBs && r ? fmtConv(realBs / r) : "";
     }
   });
 
@@ -1024,9 +1037,10 @@ export default function App() {
 
   /* Desglose de equivalencia en Bs solo cuando la moneda activa NO es Bolívares (Bs) */
   const showBsBreakdown = activeCur !== "bs" && inputNum > 0;
+  const realInputBs = inputNum ? inputNum * (rateToBs(activeCur, rates) || 1) : 0;
   const bsBreakdown = {
-    euro: showBsBreakdown ? inputNum * (rates.euro || FALLBACK_RATES.euro) : 0,
-    usdt: showBsBreakdown ? inputNum * (rates.usdt || FALLBACK_RATES.usdt) : 0,
+    euro: showBsBreakdown ? realInputBs : 0,
+    usdt: showBsBreakdown ? realInputBs : 0,
   };
 
   return (
@@ -1037,7 +1051,7 @@ export default function App() {
         {/* OFFLINE BANNER */}
         {!isOnline && (
           <div className="offline-banner">
-            ... Sin conexión · Mostrando cotizaciones guardadas
+            📵 Sin conexión · Mostrando cotizaciones guardadas
           </div>
         )}
 
