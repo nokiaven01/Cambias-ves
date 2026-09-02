@@ -1025,12 +1025,40 @@ export default function App() {
     setModal(null);
   };
 
-  /* Desglose de equivalencia en Bs solo cuando la moneda activa NO es Bolívares (Bs) */
-  const showBsBreakdown = activeCur !== "bs" && inputNum > 0;
-  const bsBreakdown = {
-    euro: showBsBreakdown ? inputNum * (rates.euro || FALLBACK_RATES.euro) : 0,
-    usdt: showBsBreakdown ? inputNum * (rates.usdt || FALLBACK_RATES.usdt) : 0,
-  };
+  /* 
+   * CÁLCULO Y CONFIGURACIÓN DINÁMICA DE LOS CUADROS PEQUEÑOS DE EQUIVALENCIA EN BS
+   */
+  let leftBoxTitle = "Bs = EUR BCV";
+  let leftBoxVal = 0;
+  let rightBoxTitle = "Bs = USDT P2P";
+  let rightBoxVal = 0;
+
+  if (activeCur === "usd") {
+    leftBoxTitle = "$ = EUR BCV";
+    leftBoxVal = inputNum ? inputNum * (rates.euro || FALLBACK_RATES.euro) : 0;
+    
+    rightBoxTitle = "$ = USDT P2P";
+    rightBoxVal = inputNum ? inputNum * (rates.usdt || FALLBACK_RATES.usdt) : 0;
+  } else if (activeCur === "eur") {
+    leftBoxTitle = "Bs = EUR BCV";
+    leftBoxVal = inputNum ? inputNum * (rates.euro || FALLBACK_RATES.euro) : 0;
+
+    rightBoxTitle = "€ = USDT P2P";
+    rightBoxVal = inputNum ? inputNum * (rates.usdt || FALLBACK_RATES.usdt) : 0;
+  } else if (activeCur === "usdt") {
+    leftBoxTitle = "USDT = EUR BCV";
+    leftBoxVal = inputNum ? inputNum * (rates.euro || FALLBACK_RATES.euro) : 0;
+
+    rightBoxTitle = "Bs = USDT P2P";
+    rightBoxVal = inputNum ? inputNum * (rates.usdt || FALLBACK_RATES.usdt) : 0;
+  } else {
+    // Si la moneda activa es "bs"
+    leftBoxTitle = "Bs = EUR BCV";
+    leftBoxVal = inputNum ? inputNum : 0;
+
+    rightBoxTitle = "Bs = USDT P2P";
+    rightBoxVal = inputNum ? inputNum : 0;
+  }
 
   return (
     <>
@@ -1191,18 +1219,18 @@ export default function App() {
             })}
           </div>
 
-          {/* CUADROS PEQUEÑOS DE EQUIVALENCIA EN BS PARA EURO Y USDT */}
+          {/* CUADROS PEQUEÑOS DE EQUIVALENCIA EN BS SEGÚN LA MONEDA ACTIVA */}
           <div className="bs-rates-breakdown">
-            <div className={`bs-rate-mini ${activeCur === "eur" ? "active-tag" : ""}`}>
-              <span className="bs-rate-mini-title">Bs = EUR BCV</span>
-              <span className={`bs-rate-mini-val ${!bsBreakdown.euro ? "empty" : ""}`}>
-                {bsBreakdown.euro ? `${fmt(bsBreakdown.euro)}` : "—"}
+            <div className={`bs-rate-mini ${activeCur !== "bs" ? "active-tag" : ""}`}>
+              <span className="bs-rate-mini-title">{leftBoxTitle}</span>
+              <span className={`bs-rate-mini-val ${!leftBoxVal ? "empty" : ""}`}>
+                {leftBoxVal ? `${fmt(leftBoxVal)}` : "—"}
               </span>
             </div>
-            <div className={`bs-rate-mini ${activeCur === "usdt" ? "active-tag" : ""}`}>
-              <span className="bs-rate-mini-title">Bs = USDT P2P</span>
-              <span className={`bs-rate-mini-val ${!bsBreakdown.usdt ? "empty" : ""}`}>
-                {bsBreakdown.usdt ? `${fmt(bsBreakdown.usdt)}` : "—"}
+            <div className={`bs-rate-mini ${activeCur !== "bs" ? "active-tag" : ""}`}>
+              <span className="bs-rate-mini-title">{rightBoxTitle}</span>
+              <span className={`bs-rate-mini-val ${!rightBoxVal ? "empty" : ""}`}>
+                {rightBoxVal ? `${fmt(rightBoxVal)}` : "—"}
               </span>
             </div>
           </div>
