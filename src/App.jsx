@@ -1052,12 +1052,12 @@ export default function App() {
     rightBoxTitle = "Bs = USDT P2P";
     rightBoxVal = inputNum ? inputNum * (rates.usdt || FALLBACK_RATES.usdt) : 0;
   } else {
-    // Si la moneda activa es "bs"
+    // Si la moneda activa es "bs" (Bs = $ BCV), los cuadros pequeños se mantienen vacíos ("—")
     leftBoxTitle = "Bs = EUR BCV";
-    leftBoxVal = inputNum ? inputNum : 0;
+    leftBoxVal = 0;
 
     rightBoxTitle = "Bs = USDT P2P";
-    rightBoxVal = inputNum ? inputNum : 0;
+    rightBoxVal = 0;
   }
 
   return (
