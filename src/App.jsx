@@ -951,21 +951,20 @@ export default function App() {
   const inputNum = safeEvaluate(amount) || 0;
   
   /*
-   * Si la moneda activa es divisas (USD, EUR, USDT), los Bolívares principales 
-   * se reflejan según la tasa del Dólar BCV. Si la moneda activa es "bs", 
-   * el valor en Bs se mantiene exacto como lo escribe el usuario.
+   * Obtenemos el equivalente total en Bolívares de la moneda activa
    */
-  const amountInBs = inputNum 
-    ? (activeCur === "bs" ? inputNum : inputNum * (rates.bcv || FALLBACK_RATES.bcv)) 
-    : 0;
+  const activeRate = rateToBs(activeCur, rates);
+  const amountInBs = inputNum && activeRate ? inputNum * activeRate : 0;
 
   const curValues = {};
   CURRENCIES.forEach(c => {
     if (c.id === activeCur) {
       curValues[c.id] = amount; 
     } else if (c.id === "bs") {
+      /* La caja Bs = $ BCV siempre muestra el monto en Bolívares tal cual */
       curValues[c.id] = amountInBs ? veMontoFmt.format(amountInBs) : "";
     } else {
+      /* USD, EUR y USDT calculan su equivalencia individual */
       const r = rateToBs(c.id, rates);
       curValues[c.id] = amountInBs && r ? fmtConv(amountInBs / r) : "";
     }
@@ -1038,7 +1037,7 @@ export default function App() {
         {/* OFFLINE BANNER */}
         {!isOnline && (
           <div className="offline-banner">
-            📵 Sin conexión · Mostrando cotizaciones guardadas
+            ... Sin conexión · Mostrando cotizaciones guardadas
           </div>
         )}
 
