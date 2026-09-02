@@ -11,10 +11,10 @@ const FALLBACK_RATES = {
 
 /* ─── MONEDAS DE LA CALCULADORA CONVERTIBLE ────────────────────────────── */
 const CURRENCIES = [
-  { id: "bs",   label: "Bs",   symbol: "Bs", icon: "🇻🇪", full: "Bolívares" },
-  { id: "usd",  label: "USD",  symbol: "$",  icon: "💵", full: "Dólares" },
-  { id: "eur",  label: "EUR",  symbol: "€",  icon: "💶", full: "Euros" },
-  { id: "usdt", label: "USDT", symbol: "₮",  icon: "₮",  full: "Tether USDT" },
+  { id: "bs",   label: "Bs = $ BCV", symbol: "Bs", icon: "🇻🇪", full: "Bolívares (Tasa BCV)" },
+  { id: "usd",  label: "USD",        symbol: "$",  icon: "💵", full: "Dólares" },
+  { id: "eur",  label: "EUR",        symbol: "€",  icon: "💶", full: "Euros" },
+  { id: "usdt", label: "USDT",       symbol: "₮",  icon: "₮",  full: "Tether USDT" },
 ];
 
 /* ─── MONEDAS DE "LA COCHINA" (dividir cuenta) — con imágenes ───────────── */
@@ -284,24 +284,24 @@ const styles = `
     background: rgba(234,179,8,0.3);
   }
 
-  /* TARJETAS DE BS POR CADA TASA (Equivalencias rápidas) */
+  /* TARJETAS DE BS POR CADA TASA (2 columnas para Euro y USDT) */
   .bs-rates-breakdown {
-    display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 6px; margin-bottom: 14px;
+    display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 14px;
   }
   .bs-rate-mini {
     background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.06);
-    border-radius: 10px; padding: 7px 6px; text-align: center; display: flex;
+    border-radius: 10px; padding: 7px 8px; text-align: center; display: flex;
     flex-direction: column; justify-content: center; transition: all .15s;
   }
   .bs-rate-mini.active-tag {
     border-color: rgba(234,179,8,0.3); background: rgba(234,179,8,0.04);
   }
   .bs-rate-mini-title {
-    font-size: 8.5px; font-weight: 800; color: #64748b; letter-spacing: 0.3px; text-transform: uppercase;
+    font-size: 9px; font-weight: 800; color: #64748b; letter-spacing: 0.3px; text-transform: uppercase;
   }
   .bs-rate-mini.active-tag .bs-rate-mini-title { color: #eab308; }
   .bs-rate-mini-val {
-    font-family: 'JetBrains Mono', monospace; font-size: 11.5px; font-weight: 700;
+    font-family: 'JetBrains Mono', monospace; font-size: 12px; font-weight: 700;
     color: #f1f5f9; margin-top: 2px; word-break: break-all;
   }
   .bs-rate-mini-val.empty { color: #334155; }
@@ -949,13 +949,22 @@ export default function App() {
   }, [loadRates]);
 
   const inputNum = safeEvaluate(amount) || 0;
-  const activeBsRate = rateToBs(activeCur, rates);
-  const amountInBs = inputNum && activeBsRate ? inputNum * activeBsRate : 0;
+  
+  /*
+   * Si la moneda activa es divisas (USD, EUR, USDT), los Bolívares principales 
+   * se reflejan según la tasa del Dólar BCV. Si la moneda activa es "bs", 
+   * el valor en Bs se mantiene exacto como lo escribe el usuario.
+   */
+  const amountInBs = inputNum 
+    ? (activeCur === "bs" ? inputNum : inputNum * (rates.bcv || FALLBACK_RATES.bcv)) 
+    : 0;
 
   const curValues = {};
   CURRENCIES.forEach(c => {
     if (c.id === activeCur) {
       curValues[c.id] = amount; 
+    } else if (c.id === "bs") {
+      curValues[c.id] = amountInBs ? veMontoFmt.format(amountInBs) : "";
     } else {
       const r = rateToBs(c.id, rates);
       curValues[c.id] = amountInBs && r ? fmtConv(amountInBs / r) : "";
@@ -1014,10 +1023,9 @@ export default function App() {
     setModal(null);
   };
 
-  /* Desglose de equivalencia en Bs sólo cuando la moneda activa NO es Bolívares (Bs) */
+  /* Desglose de equivalencia en Bs solo cuando la moneda activa NO es Bolívares (Bs) */
   const showBsBreakdown = activeCur !== "bs" && inputNum > 0;
   const bsBreakdown = {
-    bcv: showBsBreakdown ? inputNum * (rates.bcv || FALLBACK_RATES.bcv) : 0,
     euro: showBsBreakdown ? inputNum * (rates.euro || FALLBACK_RATES.euro) : 0,
     usdt: showBsBreakdown ? inputNum * (rates.usdt || FALLBACK_RATES.usdt) : 0,
   };
@@ -1181,14 +1189,8 @@ export default function App() {
             })}
           </div>
 
-          {/* CUADROS PEQUEÑOS DE EQUIVALENCIA EN BS SEGÚN CADA TASA */}
+          {/* CUADROS PEQUEÑOS DE EQUIVALENCIA EN BS PARA EURO Y USDT */}
           <div className="bs-rates-breakdown">
-            <div className={`bs-rate-mini ${activeCur === "usd" ? "active-tag" : ""}`}>
-              <span className="bs-rate-mini-title">Bs BCV</span>
-              <span className={`bs-rate-mini-val ${!bsBreakdown.bcv ? "empty" : ""}`}>
-                {bsBreakdown.bcv ? `${fmt(bsBreakdown.bcv)}` : "—"}
-              </span>
-            </div>
             <div className={`bs-rate-mini ${activeCur === "eur" ? "active-tag" : ""}`}>
               <span className="bs-rate-mini-title">Bs Euro</span>
               <span className={`bs-rate-mini-val ${!bsBreakdown.euro ? "empty" : ""}`}>
