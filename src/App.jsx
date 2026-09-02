@@ -1192,13 +1192,13 @@ export default function App() {
           {/* CUADROS PEQUEÑOS DE EQUIVALENCIA EN BS PARA EURO Y USDT */}
           <div className="bs-rates-breakdown">
             <div className={`bs-rate-mini ${activeCur === "eur" ? "active-tag" : ""}`}>
-              <span className="bs-rate-mini-title">Bs Euro</span>
+              <span className="bs-rate-mini-title">Bs = EUR BCV</span>
               <span className={`bs-rate-mini-val ${!bsBreakdown.euro ? "empty" : ""}`}>
                 {bsBreakdown.euro ? `${fmt(bsBreakdown.euro)}` : "—"}
               </span>
             </div>
             <div className={`bs-rate-mini ${activeCur === "usdt" ? "active-tag" : ""}`}>
-              <span className="bs-rate-mini-title">Bs USDT</span>
+              <span className="bs-rate-mini-title">Bs = USDT P2P</span>
               <span className={`bs-rate-mini-val ${!bsBreakdown.usdt ? "empty" : ""}`}>
                 {bsBreakdown.usdt ? `${fmt(bsBreakdown.usdt)}` : "—"}
               </span>
