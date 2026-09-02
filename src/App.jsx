@@ -951,35 +951,23 @@ export default function App() {
   const inputNum = safeEvaluate(amount) || 0;
   
   /*
-   * Si la moneda activa es "bs", usamos exactamente lo ingresado.
-   * Si es USD/EUR/USDT, calculamos primero los Dólares equivalentes reales 
-   * y los multiplicamos EXCLUSIVAMENTE por la tasa Dólar BCV.
+   * Si la moneda activa es divisas (USD, EUR, USDT), los Bolívares principales 
+   * se reflejan según la tasa del Dólar BCV. Si la moneda activa es "bs", 
+   * el valor en Bs se mantiene exacto como lo escribe el usuario.
    */
-  const bcvRate = rates.bcv || FALLBACK_RATES.bcv;
-  let amountInBs = 0;
-
-  if (inputNum) {
-    if (activeCur === "bs") {
-      amountInBs = inputNum;
-    } else {
-      const curRate = rateToBs(activeCur, rates) || bcvRate;
-      const usdEquiv = (inputNum * curRate) / bcvRate;
-      amountInBs = usdEquiv * bcvRate;
-    }
-  }
+  const amountInBs = inputNum 
+    ? (activeCur === "bs" ? inputNum : inputNum * (rates.bcv || FALLBACK_RATES.bcv)) 
+    : 0;
 
   const curValues = {};
   CURRENCIES.forEach(c => {
     if (c.id === activeCur) {
       curValues[c.id] = amount; 
     } else if (c.id === "bs") {
-      /* Muestra siempre los Bolívares en base al Dólar BCV */
       curValues[c.id] = amountInBs ? veMontoFmt.format(amountInBs) : "";
     } else {
-      /* USD, EUR y USDT calculan su equivalencia propia */
       const r = rateToBs(c.id, rates);
-      const realBs = inputNum ? inputNum * (rateToBs(activeCur, rates) || 1) : 0;
-      curValues[c.id] = realBs && r ? fmtConv(realBs / r) : "";
+      curValues[c.id] = amountInBs && r ? fmtConv(amountInBs / r) : "";
     }
   });
 
@@ -1037,10 +1025,9 @@ export default function App() {
 
   /* Desglose de equivalencia en Bs solo cuando la moneda activa NO es Bolívares (Bs) */
   const showBsBreakdown = activeCur !== "bs" && inputNum > 0;
-  const realInputBs = inputNum ? inputNum * (rateToBs(activeCur, rates) || 1) : 0;
   const bsBreakdown = {
-    euro: showBsBreakdown ? realInputBs : 0,
-    usdt: showBsBreakdown ? realInputBs : 0,
+    euro: showBsBreakdown ? inputNum * (rates.euro || FALLBACK_RATES.euro) : 0,
+    usdt: showBsBreakdown ? inputNum * (rates.usdt || FALLBACK_RATES.usdt) : 0,
   };
 
   return (
