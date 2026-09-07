@@ -243,7 +243,7 @@ const styles = `
     min-height: 62px; padding: 9px 12px;
     background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.1);
     border-radius: 13px; cursor: text; transition: border-color .2s, background .2s;
-    position: relative; /* Para anclar el botón + */
+    position: relative;
   }
   .cur-box.active {
     border-color: rgba(234,179,8,0.5); background: rgba(234,179,8,0.06);
@@ -262,7 +262,7 @@ const styles = `
   }
   .cur-box.active .cur-box-input { 
     color: #eab308; 
-    padding-right: 32px; /* Evita que el texto pise el botón + */
+    padding-right: 32px;
   }
   .cur-box-input::placeholder { color: #334155; }
 
@@ -284,25 +284,27 @@ const styles = `
     background: rgba(234,179,8,0.3);
   }
 
-  /* TARJETAS DE BS POR CADA TASA (2 columnas para Euro y USDT) */
+  /* TARJETAS DE BS POR CADA TASA (Ajustado al tamaño exacto de Calculadora Convertible) */
   .bs-rates-breakdown {
-    display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 14px;
+    display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 14px;
   }
   .bs-rate-mini {
-    background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.06);
-    border-radius: 10px; padding: 7px 8px; text-align: center; display: flex;
-    flex-direction: column; justify-content: center; transition: all .15s;
+    display: flex; flex-direction: column; justify-content: center; gap: 4px;
+    min-height: 62px; padding: 9px 12px;
+    background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.1);
+    border-radius: 13px; text-align: left; transition: all .15s;
   }
   .bs-rate-mini.active-tag {
-    border-color: rgba(234,179,8,0.3); background: rgba(234,179,8,0.04);
+    border-color: rgba(234,179,8,0.5); background: rgba(234,179,8,0.06);
+    box-shadow: 0 0 0 1px rgba(234,179,8,0.25);
   }
   .bs-rate-mini-title {
-    font-size: 9px; font-weight: 800; color: #64748b; letter-spacing: 0.3px; text-transform: uppercase;
+    font-size: 10px; font-weight: 800; color: #94a3b8; letter-spacing: 0.3px; text-transform: uppercase;
   }
   .bs-rate-mini.active-tag .bs-rate-mini-title { color: #eab308; }
   .bs-rate-mini-val {
-    font-family: 'JetBrains Mono', monospace; font-size: 12px; font-weight: 700;
-    color: #f1f5f9; margin-top: 2px; word-break: break-all;
+    font-family: 'JetBrains Mono', monospace; font-size: 17px; font-weight: 700;
+    color: #f1f5f9; word-break: break-all; line-height: 1.2;
   }
   .bs-rate-mini-val.empty { color: #334155; }
 
@@ -1028,35 +1030,35 @@ export default function App() {
   /* 
    * CÁLCULO Y CONFIGURACIÓN DINÁMICA DE LOS CUADROS PEQUEÑOS DE EQUIVALENCIA EN BS
    */
-  let leftBoxTitle = "Bs = EUR BCV";
+  let leftBoxTitle = "Bs = Euro Oficial BCV";
   let leftBoxVal = 0;
-  let rightBoxTitle = "Bs = USDT P2P";
+  let rightBoxTitle = "Bs = USDT P2P Binance";
   let rightBoxVal = 0;
 
   if (activeCur === "usd") {
-    leftBoxTitle = "$ = EUR BCV";
+    leftBoxTitle = "Dólar = Euro Oficial BCV";
     leftBoxVal = inputNum ? inputNum * (rates.euro || FALLBACK_RATES.euro) : 0;
     
-    rightBoxTitle = "$ = USDT P2P";
+    rightBoxTitle = "Dólar = USDT P2P Binance";
     rightBoxVal = inputNum ? inputNum * (rates.usdt || FALLBACK_RATES.usdt) : 0;
   } else if (activeCur === "eur") {
-    leftBoxTitle = "Bs = EUR BCV";
+    leftBoxTitle = "Bs = Euro Oficial BCV";
     leftBoxVal = inputNum ? inputNum * (rates.euro || FALLBACK_RATES.euro) : 0;
 
-    rightBoxTitle = "€ = USDT P2P";
+    rightBoxTitle = "Euro = USDT P2P Binance";
     rightBoxVal = inputNum ? inputNum * (rates.usdt || FALLBACK_RATES.usdt) : 0;
   } else if (activeCur === "usdt") {
-    leftBoxTitle = "USDT = EUR BCV";
+    leftBoxTitle = "USDT P2P = Euro Oficial BCV";
     leftBoxVal = inputNum ? inputNum * (rates.euro || FALLBACK_RATES.euro) : 0;
 
-    rightBoxTitle = "Bs = USDT P2P";
+    rightBoxTitle = "Bs = USDT P2P Binance";
     rightBoxVal = inputNum ? inputNum * (rates.usdt || FALLBACK_RATES.usdt) : 0;
   } else {
     // Si la moneda activa es "bs" (Bs = $ BCV), los cuadros pequeños se mantienen vacíos ("—")
-    leftBoxTitle = "Bs = EUR BCV";
+    leftBoxTitle = "Bs = Euro Oficial BCV";
     leftBoxVal = 0;
 
-    rightBoxTitle = "Bs = USDT P2P";
+    rightBoxTitle = "Bs = USDT P2P Binance";
     rightBoxVal = 0;
   }
 
