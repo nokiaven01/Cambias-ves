@@ -37,8 +37,8 @@ jobs:
     - name: Grant execute permission for gradlew
       run: chmod +x android/gradlew
 
-    - name: Build Debug APK via Capacitor
-      run: npx cap build android --android-module app
+    - name: Build Debug APK via Capacitor CLI
+      run: npx cap build android
 
     - name: Upload APK
       uses: actions/upload-artifact@v4
