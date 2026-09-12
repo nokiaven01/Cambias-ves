@@ -28,15 +28,21 @@ jobs:
     - name: Build Web App
       run: npm run build
 
-    - name: Add Android Platform & Sync
+    - name: Install Capacitor CLI & Assets
       run: |
         npm install @capacitor/core @capacitor/android @capacitor/cli @capacitor/assets
-        npx cap add android || true
-        npx cap sync android
 
-    - name: Generate App Icons
+    - name: Add Android Platform
       run: |
-        npx @capacitor/assets generate --android --iconBackgroundColor '#ffffff' --iconBackgroundColorDark '#111111'
+        npx cap add android || true
+
+    - name: Generate App Icons from assets/icon.png
+      run: |
+        npx @capacitor/assets generate --android
+
+    - name: Sync Capacitor Android
+      run: |
+        npx cap sync android
 
     - name: Fix Kotlin Duplicate Classes Resolution
       run: |
