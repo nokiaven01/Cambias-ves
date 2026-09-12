@@ -30,9 +30,13 @@ jobs:
 
     - name: Add Android Platform & Sync
       run: |
-        npm install @capacitor/core @capacitor/android @capacitor/cli
+        npm install @capacitor/core @capacitor/android @capacitor/cli @capacitor/assets
         npx cap add android || true
         npx cap sync android
+
+    - name: Generate App Icons
+      run: |
+        npx @capacitor/assets generate --android --iconBackgroundColor '#ffffff' --iconBackgroundColorDark '#111111'
 
     - name: Fix Kotlin Duplicate Classes Resolution
       run: |
